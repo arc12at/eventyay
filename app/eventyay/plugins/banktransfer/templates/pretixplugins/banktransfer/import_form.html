@@ -11,52 +11,6 @@
             {% endblocktrans %}
         </div>
     {% else %}
-        <style>
-            .eventyay-file-pick-wrapper {
-              display: flex;
-              align-items: center;
-              position: relative;
-              background-color: #fff;
-              border: 1px solid #ccc;
-              border-radius: 4px;
-              overflow: hidden;
-              cursor: pointer;
-            }
-            .eventyay-file-pick-wrapper:focus-within {
-              border-color: #80bdff;
-              outline: 0;
-              box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-            }
-            .eventyay-file-pick-wrapper label {
-              background-color: #e9ecef;
-              border-right: 1px solid #ccc;
-              padding: 6px 12px;
-              font-size: 14px;
-              font-weight: 400;
-              color: #333;
-              cursor: pointer;
-              white-space: nowrap;
-              margin-bottom: 0;
-            }
-            .eventyay-file-pick-wrapper label:hover {
-              background-color: #dde0e3;
-            }
-            .eventyay-file-pick-wrapper input[type="file"],
-            .eventyay-file-pick-wrapper input[type="file"]:disabled {
-              position: absolute;
-              width: 1px;
-              height: 1px;
-              opacity: 0;
-              overflow: hidden;
-              pointer-events: none;
-            }
-            .eventyay-file-name {
-              font-size: 14px;
-              color: #6c757d;
-              padding: 6px 12px;
-              margin-left: 8px;
-            }
-        </style>
         <form action="" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <p>{% blocktrans trimmed %}
@@ -65,15 +19,15 @@
             <p>{% blocktrans trimmed %}
                 Currently, this feature supports <code>.csv</code> files and files in the MT940 format.
             {% endblocktrans %}</p>
-            <div style="display: flex; align-items: center; margin-top: 20px; margin-bottom: 10px;">
-                <label style="font-weight: bold; margin-bottom: 0; margin-right: 15px;" for="file">{% trans "Import file" %} *</label>
-                <div style="width: 50%;">
+            <div class="banktransfer-file-group">
+                <label class="banktransfer-file-label" for="file">{% trans "Import file" %} *</label>
+                <div class="banktransfer-file-input-wrapper">
                     <input id="file" type="file" name="file" required/>
                 </div>
             </div>
             
-            <div style="background-color: #fff; border: 1px solid #e3e3e3; border-radius: 4px; padding: 15px; text-align: right;">
-                <button class="btn btn-primary btn-lg" style="width: auto; display: inline-block;" type="submit">
+            <div class="banktransfer-submit-group">
+                <button class="btn btn-primary btn-lg" type="submit">
                     <i class="fa fa-upload"></i> {% trans "Upload and continue" %}
                 </button>
             </div>
