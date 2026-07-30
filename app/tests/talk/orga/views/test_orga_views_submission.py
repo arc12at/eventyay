@@ -289,19 +289,50 @@ def test_orga_can_add_speakers(orga_client, submission, other_orga_user, user):
     assert submission.speakers.count() == 1
 
     if user == "EMAIL":
-        user = other_orga_user.email
+        data = {"email": other_orga_user.email}
     else:
-        user = "some_unused@mail.org"
+        data = {"email": "some_unused@mail.org", "name": "New Speaker"}
 
     response = orga_client.post(
         submission.orga_urls.speakers,
-        data={"email": user},
+        data=data,
         follow=True,
     )
     submission.refresh_from_db()
 
     assert submission.speakers.count() == 2
     assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_orga_requires_name_for_new_speaker(orga_client, submission):
+    response = orga_client.post(
+        submission.orga_urls.speakers,
+        data={"email": "some_unused@mail.org"},
+    )
+
+    assert response.status_code == 200
+    assert response.context["form"].errors["name"]
+    assert submission.speakers.count() == 1
+
+
+@pytest.mark.django_db
+def test_orga_speaker_page_excludes_submission_answers(
+    orga_client, submission, other_submission, answer, speaker_answer
+):
+    with scope(event=submission.event):
+        other_submission.speakers.add(submission.speakers.first())
+
+    response = orga_client.get(submission.orga_urls.speakers)
+
+    assert response.status_code == 200
+    assert response.context["form"].fields["name"].required
+    assert submission.event.organizer.orga_urls.user_search in response.text
+    speaker_context = response.context["speakers"][0]
+    assert speaker_context["other_submissions"] == [other_submission]
+    reviewer_answers = speaker_context["reviewer_answers"]
+    assert speaker_answer in reviewer_answers
+    assert answer not in reviewer_answers
 
 
 @pytest.mark.django_db
@@ -322,7 +353,7 @@ def test_orga_can_readd_speaker(orga_client, submission):
     assert submission.speakers.count() == 1
     response = orga_client.post(
         submission.orga_urls.speakers,
-        data={"speaker": submission.speakers.first().email, "name": "Name"},
+        data={"email": submission.speakers.first().email},
         follow=True,
     )
     submission.refresh_from_db()
@@ -390,6 +421,61 @@ def test_orga_can_create_submission(orga_client, event, known_speaker, orga_user
         assert sub.title == "title"
         assert sub.speakers.count() == 1
         assert sub.mails.all().count() == 1
+
+
+@pytest.mark.django_db
+def test_orga_create_submission_preserves_speaker_after_form_error(orga_client, event):
+    response = orga_client.post(
+        event.orga_urls.new_submission,
+        data={
+            "abstract": "abstract",
+            "content_locale": "en",
+            "description": "description",
+            "speaker-email": "foo@bar.com",
+            "speaker-name": "Foo Speaker",
+            "speaker-locale": "en",
+            "state": "submitted",
+            "title": "title",
+        },
+    )
+
+    speaker_form = response.context["new_speaker_form"]
+    assert not speaker_form.errors
+    assert response.status_code == 200
+    assert speaker_form["email"].value() == "foo@bar.com"
+    assert list(speaker_form.fields["email"].widget.choices) == [
+        ("foo@bar.com", "Foo Speaker (foo@bar.com)")
+    ]
+    with scope(event=event):
+        assert event.submissions.count() == 0
+
+
+@pytest.mark.django_db
+def test_orga_create_submission_does_not_save_before_speaker_validation(orga_client, event):
+    with scope(event=event):
+        type_pk = event.submission_types.first().pk
+
+    response = orga_client.post(
+        event.orga_urls.new_submission,
+        data={
+            "abstract": "abstract",
+            "content_locale": "en",
+            "description": "description",
+            "speaker-name": "Foo Speaker",
+            "speaker-locale": "en",
+            "state": "submitted",
+            "submission_type": type_pk,
+            "title": "title",
+        },
+    )
+
+    speaker_form = response.context["new_speaker_form"]
+    assert response.status_code == 200
+    assert "__all__" not in speaker_form.errors
+    assert "email" in speaker_form.errors
+    assert len(speaker_form.errors["email"]) == 1
+    with scope(event=event):
+        assert event.submissions.count() == 0
 
 
 @pytest.mark.django_db
@@ -729,7 +815,7 @@ def test_reviewer_cannot_see_anonymisation_interface(review_client, submission):
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("use_tracks", (True, False))
-def test_submission_statistics(use_tracks, slot, other_slot, orga_client):
+def test_talk_dashboard_statistics(use_tracks, slot, other_slot, orga_client):
     with scope(event=slot.event):
         slot.event.feature_flags["use_tracks"] = use_tracks
         slot.event.save()
@@ -740,8 +826,11 @@ def test_submission_statistics(use_tracks, slot, other_slot, orga_client):
         ActivityLog.objects.filter(pk=logs[0].pk).update(
             timestamp=logs[0].timestamp - dt.timedelta(days=2)
         )
-    response = orga_client.get(slot.event.orga_urls.stats)
+    response = orga_client.get(slot.event.orga_urls.base)
     assert response.status_code == 200
+    content = response.content.decode()
+    assert "Proposal Statistics" in content
+    assert "Session Statistics" in content
 
 
 @pytest.mark.django_db
