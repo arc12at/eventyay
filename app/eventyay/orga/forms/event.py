@@ -4,13 +4,13 @@ from decimal import Decimal
 from django import forms
 from django.core.files.base import ContentFile
 from django.forms import inlineformset_factory
-from django.utils.html import format_html
-from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from django_scopes.forms import SafeModelMultipleChoiceField
 from i18nfield.fields import I18nFormField, I18nTextarea
 from i18nfield.forms import I18nFormMixin, I18nFormSetMixin, I18nModelForm
 
+from eventyay.base.models import Event, EventExtraLink, ReviewPhase, ReviewScore, ReviewScoreCategory
+from eventyay.base.settings import GlobalSettingsObject
 from eventyay.common.forms.mixins import (
     HierarkeyMixin,
     I18nHelpText,
@@ -25,10 +25,8 @@ from eventyay.common.forms.widgets import (
 )
 from eventyay.common.text.css import validate_css
 from eventyay.common.text.phrases import phrases
-from eventyay.base.models import Event, EventExtraLink
-from eventyay.base.settings import GlobalSettingsObject
 from eventyay.orga.forms.widgets import HeaderSelect
-from eventyay.base.models import ReviewPhase, ReviewScore, ReviewScoreCategory
+
 
 SCHEDULE_DISPLAY_CHOICES = (
     ('grid', _('Grid')),
@@ -90,19 +88,6 @@ class EventForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
     session_popularity_show_on_schedule = forms.BooleanField(
         label=_('Show popularity on schedule'),
         help_text=_('Shows favourite counts on session cards in the schedule.'),
-        required=False,
-    )
-    export_html_on_release = forms.BooleanField(
-        label=_('Generate HTML export on schedule release'),
-        help_text=_('The static HTML export will be provided as a .zip archive on the schedule export page.'),
-        required=False,
-    )
-    html_export_url = forms.URLField(
-        label=_('HTML Export URL'),
-        help_text=_(
-            'If you publish your schedule via the HTML export, you will want the correct absolute URL to be set in various places. '
-            'Please only set this value once you have published your schedule. Should end with a slash.'
-        ),
         required=False,
     )
     header_pattern = forms.ChoiceField(
@@ -223,12 +208,34 @@ class EventForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, I18nModelForm):
             'use_feedback': 'feature_flags',
             'session_popularity_enabled': 'feature_flags',
             'session_popularity_show_on_schedule': 'feature_flags',
-            'export_html_on_release': 'feature_flags',
-            'html_export_url': 'display_settings',
             'header_pattern': 'display_settings',
             'etherpad_enabled': 'feature_flags',
             'etherpad_auto_generate': 'feature_flags',
             'etherpad_public': 'display_settings',
+        }
+
+
+class ScheduleHtmlExportForm(ReadOnlyFlag, I18nHelpText, JsonSubfieldMixin, forms.Form):
+    """Settings for the schedule HTML export feature, shown as a tab in Import/Export."""
+
+    export_html_on_release = forms.BooleanField(
+        label=_('Generate HTML export on schedule release'),
+        help_text=_('The static HTML export will be provided as a .zip archive on the schedule export page.'),
+        required=False,
+    )
+    html_export_url = forms.URLField(
+        label=_('HTML Export URL'),
+        help_text=_(
+            'If you publish your schedule via the HTML export, you will want the correct absolute URL to be set in various places. '
+            'Please only set this value once you have published your schedule. Should end with a slash.'
+        ),
+        required=False,
+    )
+
+    class Meta:
+        json_fields = {
+            'export_html_on_release': 'feature_flags',
+            'html_export_url': 'display_settings',
         }
 
 
@@ -387,6 +394,9 @@ def strip_zeroes(value):
     return Decimal(value.rstrip('0'))
 
 
+DEFAULT_SCORE_COUNT = 3
+
+
 class ReviewScoreCategoryForm(I18nHelpText, I18nModelForm):
     new_scores = forms.CharField(required=False, initial='')
 
@@ -409,9 +419,13 @@ class ReviewScoreCategoryForm(I18nHelpText, I18nModelForm):
                 self.label_fields.append(
                     {
                         'score': score,
-                        'label_field': score._meta.get_field('label').formfield(initial=score.label),
+                        'label_field': score._meta.get_field('label').formfield(
+                            initial=score.label,
+                            widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('Label')})
+                        ),
                         'value_field': score._meta.get_field('value').formfield(
-                            initial=strip_zeroes(score.value), required=False
+                            initial=strip_zeroes(score.value), required=False,
+                            widget=forms.NumberInput(attrs={'step': '0.1', 'class': 'form-control', 'placeholder': _('Score')})
                         ),
                     }
                 )
@@ -420,14 +434,44 @@ class ReviewScoreCategoryForm(I18nHelpText, I18nModelForm):
             self.fields[f'value_{score_id}'] = score['value_field']
             self.fields[f'label_{score_id}'] = score['label_field']
 
+        self.protected_score_ids = {
+            score['score'].id
+            for score in sorted(self.label_fields, key=lambda s: s['score'].pk)[:DEFAULT_SCORE_COUNT]
+        }
+
     def _add_score_fields(self, label_id):
-        self.fields[f'value_{label_id}'] = ReviewScore._meta.get_field('value').formfield()
-        self.fields[f'label_{label_id}'] = ReviewScore._meta.get_field('label').formfield()
+        self.fields[f'value_{label_id}'] = ReviewScore._meta.get_field('value').formfield(
+            required=False,
+            widget=forms.NumberInput(attrs={'step': '0.1', 'class': 'form-control', 'placeholder': _('Score')})
+        )
+        self.fields[f'label_{label_id}'] = ReviewScore._meta.get_field('label').formfield(
+            required=False,
+            widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('Label')})
+        )
 
     def get_label_fields(self):
         for score in self.label_fields:
             score_id = score['score'].id
-            yield (self[f'value_{score_id}'], self[f'label_{score_id}'])
+            deletable = score_id not in self.protected_score_ids
+            yield (self[f'value_{score_id}'], self[f'label_{score_id}'], score_id, deletable)
+        for score_id in self.new_label_ids:
+            yield (self[f'value_{score_id}'], self[f'label_{score_id}'], score_id, True)
+
+    def clean(self):
+        data = super().clean()
+        existing_ids = [score['score'].id for score in self.label_fields]
+        for score_id in [*existing_ids, *self.new_label_ids]:
+            value = data.get(f'value_{score_id}')
+            label = data.get(f'label_{score_id}')
+            value_empty = value is None or value == ''
+
+            if value_empty and not label:
+                continue
+            if value_empty and label:
+                self.add_error(f'value_{score_id}', _('Please provide a numeric score.'))
+            elif not value_empty and not label:
+                self.add_error(f'label_{score_id}', _('Please provide a label for the score.'))
+        return data
 
     def save(self, *args, **kwargs):
         instance = super().save(*args, **kwargs)

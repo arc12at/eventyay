@@ -44,10 +44,14 @@ class EventCommonSettingsForm(SettingsForm):
         'header_background_color',
         'header_text_color',
         'navigation_text_color',
+        'menu_text_scroll_over_color',
         'theme_color_success',
         'theme_color_danger',
         'theme_color_background',
         'hover_button_color',
+        'video_navigation_background_color',
+        'video_sidebar_text_color',
+        'video_sidebar_hover_color',
         'theme_round_borders',
         'primary_font',
         'frontpage_text',
@@ -64,7 +68,7 @@ class EventCommonSettingsForm(SettingsForm):
         return data
 
     def save(self):
-        for image_field in ('event_logo_image', 'logo_image', 'event_preview_image'):
+        for image_field in ('event_logo_image', 'logo_image', 'event_preview_image', 'og_image'):
             current_value = self.event.settings.get(image_field, as_type=str, default='') or ''
             new_value = self.cleaned_data.get(image_field)
             current_file = get_file_url_path(current_value)
@@ -185,6 +189,8 @@ class EventUpdateForm(I18nModelForm):
             self.fields['slug'].widget.attrs['readonly'] = 'readonly'
         self.fields['location'].widget.attrs['rows'] = '3'
         self.fields['location'].widget.attrs['placeholder'] = _('Sample Conference Center\nHeidelberg, Germany')
+        self.fields['geo_lat'].widget.attrs['placeholder'] = _('Latitude, e.g. 40.7128')
+        self.fields['geo_lon'].widget.attrs['placeholder'] = _('Longitude, e.g. -74.0060')
 
         # Configure email field with canonical label and help text
         self.fields['email'].required = False

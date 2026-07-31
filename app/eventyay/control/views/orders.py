@@ -159,7 +159,7 @@ from eventyay.control.permissions import EventPermissionRequiredMixin
 from eventyay.control.signals import order_search_forms
 from eventyay.control.views import PaginationMixin
 from eventyay.helpers.safedownload import check_token
-from eventyay.presale.signals import question_form_fields
+from eventyay.presale.utils import build_position_additional_fields
 
 logger = logging.getLogger(__name__)
 
@@ -550,21 +550,7 @@ class OrderDetail(OrderView):
             return enabled_system_fields_by_product_id[product.pk]
 
         for p in cartpos:
-            responses = question_form_fields.send(sender=self.request.event, position=p)
-            p.additional_fields = []
-            data = p.meta_info_data
-            for r, response in sorted(responses, key=lambda r: str(r[0])):
-                if response:
-                    for key, value in response.items():
-                        answer = data.get('question_form_data', {}).get(key)
-                        if hasattr(value, 'get_display_value'):
-                            answer = value.get_display_value(answer)
-                        p.additional_fields.append(
-                            {
-                                'answer': answer,
-                                'question': value.label,
-                            }
-                        )
+            p.additional_fields = build_position_additional_fields(self.request.event, p)
 
             enabled_system_fields = get_enabled_system_fields_for_product(p.product)
             p.has_questions = (
@@ -2304,6 +2290,9 @@ class OrderModifyInformation(OrderQuestionsViewMixin, OrderView):
             messages.success(self.request, _(success_message))
 
         tickets.invalidate_cache.apply_async(kwargs={'event': self.request.event.pk, 'order': self.order.pk})
+        from eventyay.plugins.badges.utils import invalidate_badge_cache_for_order
+
+        invalidate_badge_cache_for_order(self.order)
 
         order_modified.send(sender=self.request.event, order=self.order)
         return redirect(self.get_order_url())

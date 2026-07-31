@@ -15,7 +15,7 @@
 				.ui-radio-description {{ option.description }}
 	template(v-if="playbackMode === PLAYBACK_MODE_ALWAYS_ON")
 		h2 Default stream source
-		bunt-select(name="stream-source", v-model="streamSource", :options="STREAM_SOURCE_OPTIONS", option-value="id", option-label="label", label="Stream source")
+		bunt-select(name="stream-source", v-model="streamSource", :options="STREAM_SOURCE_OPTIONS", option-value="id", option-label="label", label="Stream source", dropdown-class="stage-stream-source-dropdown")
 		template(v-if="modules['livestream.native']")
 			bunt-input(name="url", v-model="modules['livestream.native'].config.hls_url", label="HLS URL")
 			upload-url-input(name="streamOfflineImage", v-model="modules['livestream.native'].config.streamOfflineImage", label="Stream offline image")
@@ -43,6 +43,7 @@
 				bunt-switch(name="enablePrivacyEnhancedMode", v-model="enablePrivacyEnhancedMode", label="Enable No-Cookies")
 				bunt-switch(name="loop", v-model="loop", label="Loop")
 				bunt-switch(name="modestBranding", v-model="modestBranding", label="Enable Modest Branding")
+				bunt-switch(name="startMuted", v-model="startMuted", label="Start muted")
 				bunt-switch(name="hideControls", v-model="hideControls", label="Hide Controls", hint="Note: Hiding controls disables autoplay (browsers require muted autoplay, but users can't unmute without controls)")
 				bunt-switch(name="noRelated", v-model="noRelated", label="Limit related videos to same channel")
 				bunt-switch(name="disableKb", v-model="disableKb", label="Disable Keyboard Controls")
@@ -88,6 +89,7 @@ function getDefaultStreamConfig(streamSource, playbackMode = PLAYBACK_MODE_ALWAY
 	} else if (streamSource === 'youtube') {
 		config.ytid = ''
 		config.languageUrls = []
+		config.startMuted = true
 	} else if (streamSource === 'iframe') {
 		config.url = ''
 	}
@@ -166,6 +168,14 @@ export default defineComponent({
 			},
 			set(value) {
 				this.setYoutubeConfigProp('modestBranding', value)
+			}
+		},
+		startMuted: {
+			get() {
+				return !!this.modules['livestream.youtube']?.config.startMuted
+			},
+			set(value) {
+				this.setYoutubeConfigProp('startMuted', value)
 			}
 		},
 		hideControls: {
@@ -267,15 +277,8 @@ export default defineComponent({
 		},
 		normalizeLanguageYoutubeId(entry) {
 			if (!entry?.youtube_id) return
-			try {
-				new URL(entry.youtube_id)
-				const id = normalizeYoutubeVideoId(entry.youtube_id)
-				if (id) entry.youtube_id = id
-				return
-			} catch (e) {
-				const id = normalizeYoutubeVideoId(entry.youtube_id)
-				if (id) entry.youtube_id = id
-			}
+			const id = normalizeYoutubeVideoId(entry.youtube_id)
+			if (id) entry.youtube_id = id
 		},
 		setYoutubeConfigProp(prop, value) {
 			if (!this.modules['livestream.youtube']) return
@@ -318,4 +321,7 @@ export default defineComponent({
 	// no local radio styles needed anymore
 .bunt-switch-container
 	margin-top: 16px
+@supports (-moz-appearance: none)
+	.stage-stream-source-dropdown
+		margin-left: 8px
 </style>

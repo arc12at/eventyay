@@ -13,9 +13,17 @@ prompt.c-create-stage-prompt(@close="$emit('close')")
 							.ui-radio-title {{ option.label }}
 							.ui-radio-description {{ option.description }}
 			.default-source(v-if="playbackMode === PLAYBACK_MODE_ALWAYS_ON")
-				bunt-select(name="streamSource", v-model="streamSource", :options="streamSourceOptions", option-value="id", option-label="label", label="Default stream source")
+				.stream-source
+					.fieldset-label Default stream source
+					.ui-radio-options
+						label.ui-radio-option(v-for="option in streamSourceOptions", :key="option.id")
+							input(type="radio", name="streamSource", :value="option.id", v-model="streamSource")
+							.radio-copy
+								.ui-radio-title {{ option.label }}
 				bunt-input(v-if="streamSource === 'hls'", name="url", :label="$t('CreateStagePrompt:url:label')", icon="link", placeholder="https://example.com/stream.m3u8", v-model="url", :validation="v$.url")
-				bunt-input(v-else-if="streamSource === 'youtube'", name="youtubeId", label="YouTube Video ID or URL", icon="youtube", placeholder="https://www.youtube.com/watch?v=...", v-model="youtubeId", :validation="v$.youtubeId", @blur="normalizeYoutubeId")
+				template(v-else-if="streamSource === 'youtube'")
+					bunt-input(name="youtubeId", label="YouTube Video ID or URL", icon="youtube", placeholder="https://www.youtube.com/watch?v=...", v-model="youtubeId", :validation="v$.youtubeId", @blur="normalizeYoutubeId")
+					bunt-checkbox(name="start-muted", v-model="startMuted", label="Start muted")
 				template(v-else-if="streamSource === 'iframe'")
 					bunt-input(name="url", label="Iframe player URL", icon="link", placeholder="https://example.com/player", v-model="url", :validation="v$.url")
 					.field-hint {{ IFRAME_PROVIDER_HELP_TEXT }}
@@ -47,6 +55,7 @@ export default {
 			streamSource: 'hls',
 			url: '',
 			youtubeId: '',
+			startMuted: true,
 			description: '',
 			loading: false,
 			error: null,
@@ -93,6 +102,7 @@ export default {
 			}
 			if (this.streamSource === 'youtube') {
 				config.ytid = normalizeYoutubeVideoId(this.youtubeId) || this.youtubeId
+				if (this.startMuted) config.startMuted = true
 				return { type: 'livestream.youtube', config }
 			}
 			if (this.streamSource === 'iframe') {
@@ -165,7 +175,7 @@ export default {
 					resize: vertical
 					min-height: 64px
 					padding: 0 8px
-			.stage-mode
+			.stage-mode, .stream-source
 				margin-top: 16px
 				.fieldset-label
 					font-size: 12px

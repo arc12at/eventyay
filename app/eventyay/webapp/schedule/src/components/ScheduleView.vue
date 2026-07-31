@@ -12,8 +12,9 @@
 			v-model:recordingFilter="recordingFilter",
 			:favsCount="resolvedFavs.length",
 			:onlyFavs="onlyFavs",
+			v-model:shareStarredSessions="shareStarredSessions",
+			:scheduleUserLoggedIn="scheduleUserLoggedIn",
 			:hasActiveFilters="onlyFavs || activeFilterCount > 0 || recordingFilter !== 'all'",
-			:inEventTimezone="inEventTimezone",
 			v-model:currentTimezone="currentTimezone",
 			:scheduleTimezone="resolvedSchedule.timezone",
 			:userTimezone="userTimezone",
@@ -34,6 +35,7 @@
 			@selectDay="changeDay($event)",
 			@filterToggle="onFilterChange",
 			@toggleFavs="toggleFavs",
+			@update:shareStarredSessions="updateShareStarredSessions",
 			@resetFilters="resetAllFilters",
 			@saveTimezone="saveTimezone",
 			@toggleSessionsMode="sessionsMode = !sessionsMode",
@@ -58,6 +60,7 @@
 				@unfav="onUnfav")
 			linear-schedule(v-else,
 				:sessions="filteredSessions",
+				:forceScrollDay="forceScrollDay",
 				:rooms="computedRooms",
 				:currentDay="currentDay",
 				:now="resolvedNow",
@@ -69,7 +72,7 @@
 				:showFavCount="showFavCountOnSchedule",
 				:sortBy="effectiveSortBy",
 				:includeRoomSortKey="sortIncludeRoom",
-				:includeDateSortKey="sortIncludeDate",
+				:includeDateSortKey="sortIncludeDate || linearScheduleGroupByDay",
 				:includePopularitySortKey="sortIncludePopularity",
 				:showBreaks="!linearOnly && !sessionsMode",
 				:density="'default'",
@@ -78,6 +81,8 @@
 				@unfav="onUnfav")
 	.schedule-error(v-else-if="hasError")
 		| An error occurred while loading the schedule.
+	.schedule-empty(v-else-if="isScheduleLoaded")
+		| {{ t.no_schedule_available }}
 	.schedule-loading(v-else)
 		| Loading…
 </template>
@@ -116,7 +121,12 @@ export default {
 		scheduleFav: { default: null },
 		scheduleUnfav: { default: null },
 		scheduleExporters: { default: () => [] },
-		scheduleMetaData: { default: () => ({}) }
+		scheduleMetaData: { default: () => ({}) },
+		scheduleUserLoggedIn: { default: false },
+		loadStarredSharingPreference: { default: null },
+		updateStarredSharingPreference: { default: null },
+		onSaveTimezone: { default: null },
+		translationMessages: { default: () => ({}) },
 	},
 	props: {
 		schedule: Object,
@@ -130,6 +140,7 @@ export default {
 		hasAmPm: Boolean,
 		onHomeServer: Boolean,
 		errorLoading: Object,
+		scheduleLoaded: Boolean,
 		linearOnly: {
 			type: Boolean,
 			default: false
@@ -148,6 +159,7 @@ export default {
 		return {
 			currentDay: null,
 			onlyFavs: false,
+			shareStarredSessions: false,
 			scrollParentWidth: Infinity,
 			currentTimezone: null,
 			userTimezone: null,
@@ -167,6 +179,7 @@ export default {
 				}
 			})(),
 			sortIncludePopularity: false,
+			forceScrollDay: 0,
 			filterState: {
 				tracks: [],
 				rooms: [],
@@ -205,6 +218,15 @@ export default {
 		},
 		scheduleReady() {
 			return !!(this.resolvedSchedule && this.enrichedSessions.length)
+		},
+		isScheduleLoaded() {
+			return !!(this.scheduleLoaded || this.scheduleData?.scheduleLoaded)
+		},
+		t() {
+			const m = this.translationMessages || {}
+			return {
+				no_schedule_available: m.no_schedule_available || 'No schedule has been published yet. Please check back later.'
+			}
 		},
 		showFavCountOnSchedule() {
 			const flags = this.scheduleData?.schedule?.feature_flags || this.resolvedSchedule?.feature_flags || {}
@@ -383,17 +405,11 @@ export default {
 			}
 			return groups
 		},
-		inEventTimezone() {
-			if (!this.resolvedSchedule?.talks?.length) return false
-			const firstTalk = this.resolvedSchedule.talks[0]
-			const eventTz = this.resolvedSchedule.timezone
-			if (!firstTalk || !eventTz || !firstTalk.start) return false
-			const reference = firstTalk.start
-			const userTz = this.currentTimezone || moment.tz.guess()
-			return moment.tz(reference, userTz).utcOffset() === moment.tz(reference, eventTz).utcOffset()
-		},
 		showGrid() {
 			return !this.linearOnly && this.scrollParentWidth > 710
+		},
+		linearScheduleGroupByDay() {
+			return !this.showGrid && this.computedDays.length > 1
 		},
 		popularityFeatureEnabled() {
 			const flags = this.resolvedSchedule?.feature_flags || {}
@@ -459,6 +475,11 @@ export default {
 		this._resizeObserver.observe(this.$el)
 		if (this.computedDays?.length) {
 			this.currentDay = this.computedDays[0].format('YYYY-MM-DD')
+		}
+		if (this.loadStarredSharingPreference) {
+			this.loadStarredSharingPreference().then((enabled) => {
+				this.shareStarredSessions = !!enabled
+			})
 		}
 	},
 	beforeUnmount() {
@@ -556,8 +577,10 @@ export default {
 		},
 		changeDay(day) {
 			const dayStr = day.format ? day.format('YYYY-MM-DD') : day
-			if (dayStr === this.currentDay) return
 			this.currentDay = dayStr
+			if (this.linearScheduleGroupByDay) {
+				this.forceScrollDay++
+			}
 		},
 		setCurrentDay(day) {
 			this.changeDay(day)
@@ -569,6 +592,17 @@ export default {
 		toggleFavs() {
 			this.onlyFavs = !this.onlyFavs
 			if (this.onlyFavs) this.resetFilters()
+		},
+		async updateShareStarredSessions(value) {
+			const previous = this.shareStarredSessions
+			this.shareStarredSessions = !!value
+			if (!this.updateStarredSharingPreference) return
+			try {
+				const enabled = await this.updateStarredSharingPreference(this.shareStarredSessions)
+				this.shareStarredSessions = !!enabled
+			} catch {
+				this.shareStarredSessions = previous
+			}
 		},
 		resetAllFilters() {
 			this.onlyFavs = false
@@ -585,6 +619,9 @@ export default {
 		},
 		saveTimezone() {
 			localStorage.setItem('userTimezone', this.currentTimezone)
+			if (this.onSaveTimezone) {
+				this.onSaveTimezone(this.currentTimezone)
+			}
 		},
 		onFav(id) {
 			if (this.scheduleFav) this.scheduleFav(id)
@@ -628,6 +665,11 @@ export default {
 		text-align: center
 		color: $clr-danger
 		font-size: 18px
+	.schedule-empty
+		padding: 32px
+		text-align: center
+		font-size: 16px
+		color: $clr-secondary-text-light
 	.schedule-loading
 		padding: 32px
 		text-align: center

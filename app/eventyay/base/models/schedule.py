@@ -16,7 +16,7 @@ from django.db.utils import DatabaseError
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.timezone import now
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, ngettext
 from django.utils.translation import pgettext_lazy
 from django_scopes import scope
 from i18nfield.fields import I18nTextField
@@ -24,6 +24,7 @@ from qrcode.image.svg import SvgPathFillImage
 
 from eventyay.agenda.export_resources import enriched_resource_entry
 from eventyay.agenda.signals import register_recording_provider
+from eventyay.common.social_links import serialize_social_link
 from eventyay.agenda.tasks import export_schedule_html
 from eventyay.common.text.phrases import phrases
 from eventyay.common.urls import EventUrls
@@ -675,6 +676,35 @@ class Schedule(PretalxModel):
                         break
         return room_overlap_ids, speaker_overlaps_by_talk
 
+    def release_warning_message(self):
+        """Return a warning message for risky releases that need organiser confirmation."""
+
+        if self.talks.filter(submission__isnull=False, start__isnull=False).exists():
+            return None
+        if self.talks.filter(submission__isnull=True, start__isnull=False).exists():
+            return _('This schedule contains only breaks and no sessions.')
+        return None
+
+    def release_acknowledgement_messages(self, talk_warnings=None):
+        """Return release warnings for the orga alert that are not shown elsewhere."""
+
+        messages = []
+        if release_warning := self.release_warning_message():
+            messages.append(str(release_warning))
+        if talk_warnings is None:
+            talk_warnings = self.get_all_talk_warnings()
+        talk_warning_count = len(talk_warnings)
+        if talk_warning_count:
+            messages.append(
+                ngettext(
+                    'One session has scheduling conflicts or other issues.',
+                    '%(count)s sessions have scheduling conflicts or other issues.',
+                    talk_warning_count,
+                )
+                % {'count': talk_warning_count}
+            )
+        return messages
+
     @cached_property
     def warnings(self) -> dict:
         """A dictionary of warnings to be acknowledged before a release.
@@ -684,14 +714,18 @@ class Schedule(PretalxModel):
         ``unconfirmed`` is the list of submissions that will not be
         visible due to their unconfirmed status, and ``no_track`` are
         submissions without a track in a conference that uses tracks.
+        ``release_warning`` prompts confirmation for risky releases.
         """
 
         talks = self.talks.filter(submission__isnull=False)
+        talk_warnings = self.get_all_talk_warnings()
         warnings = {
-            'talk_warnings': [{'talk': key, 'warnings': value} for key, value in self.get_all_talk_warnings().items()],
+            'talk_warnings': [{'talk': key, 'warnings': value} for key, value in talk_warnings.items()],
             'unscheduled': talks.filter(start__isnull=True).count(),
             'unconfirmed': talks.exclude(submission__state=SubmissionStates.CONFIRMED).count(),
             'no_track': [],
+            'release_warning': self.release_warning_message(),
+            'acknowledgement_messages': self.release_acknowledgement_messages(talk_warnings),
         }
         if self.event.get_feature_flag('use_tracks'):
             warnings['no_track'] = talks.filter(submission__track_id__isnull=True)
@@ -1030,8 +1064,11 @@ class Schedule(PretalxModel):
             for profile in SpeakerProfile.objects.filter(
                 event=self.event,
                 user__in=speakers,
-            ).select_related('user')
+            ).select_related('user').prefetch_related('social_links')
         }
+        show_social_links = getattr(self.event.cfp, 'request_social_links', False) and (
+            not respect_public_visibility or self.event.cfp.is_field_public('social_links')
+        )
         for user in speakers:
             # Avoid calling event_profile() here: it can hit the DB (and even create/save
             # a profile). For schedule JSON, missing profiles should simply result in
@@ -1051,6 +1088,8 @@ class Schedule(PretalxModel):
                 'is_featured': bool(getattr(profile, 'is_featured', False)),
                 'featured_position': getattr(profile, 'position', None),
             }
+            if show_social_links and profile:
+                speaker_data['social_links'] = [serialize_social_link(link) for link in profile.social_links.all()]
             if not include_featured_speaker_metadata:
                 speaker_data['is_featured'] = False
                 speaker_data['featured_position'] = None

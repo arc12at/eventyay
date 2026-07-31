@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 from django import forms
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django_scopes import scopes_disabled
@@ -34,6 +35,10 @@ class TeamForm(forms.ModelForm):
             )
         else:
             self._selected_track_ids = set()
+
+        if not apps.is_installed("socialmedia"):
+            if "can_manage_social_media" in self.fields:
+                del self.fields["can_manage_social_media"]
 
     @staticmethod
     def _build_events_with_tracks(events_qs, tracks_qs):
@@ -109,6 +114,7 @@ class TeamForm(forms.ModelForm):
             'can_change_items',
             'can_view_orders',
             'can_change_orders',
+            'can_manage_bank_transfers',
             'can_checkin_orders',
             'can_view_vouchers',
             'can_change_vouchers',
@@ -120,9 +126,9 @@ class TeamForm(forms.ModelForm):
             'can_change_exhibition_proposals',
             'is_exhibition_reviewer',
             'hide_exhibition_applicant_emails',
+            'can_manage_social_media',
             'can_video_create_stages',
             'can_video_create_channels',
-            'can_video_direct_message',
             'can_video_manage_announcements',
             'can_video_view_users',
             'can_video_manage_users',
@@ -174,6 +180,7 @@ class TeamForm(forms.ModelForm):
             'can_change_items',
             'can_view_orders',
             'can_change_orders',
+            'can_manage_bank_transfers',
             'can_checkin_orders',
             'can_view_vouchers',
             'can_change_vouchers',
@@ -181,9 +188,9 @@ class TeamForm(forms.ModelForm):
             'is_reviewer',
             'can_change_exhibition_proposals',
             'is_exhibition_reviewer',
+            'can_manage_social_media',
             'can_video_create_stages',
             'can_video_create_channels',
-            'can_video_direct_message',
             'can_video_manage_announcements',
             'can_video_view_users',
             'can_video_manage_users',
@@ -197,7 +204,14 @@ class TeamForm(forms.ModelForm):
                 _("Please pick at least one permission for this team!")
             )
             self.add_error(None, error)
-        
+
+        if data.get('can_change_orders'):
+            data['can_view_orders'] = True
+        if data.get('can_change_vouchers'):
+            data['can_view_vouchers'] = True
+        if data.get('can_manage_bank_transfers'):
+            data['can_view_orders'] = True
+
         if self.instance.pk and not data['can_change_teams']:
             if (
                 not self.instance.organizer.teams.exclude(pk=self.instance.pk)
