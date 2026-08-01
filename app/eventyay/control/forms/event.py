@@ -203,7 +203,6 @@ class EventWizardBasicsForm(I18nModelForm):
         fields = [
             'name',
             'slug',
-            'currency',
             'date_from',
             'date_to',
             'presale_start',
@@ -211,7 +210,6 @@ class EventWizardBasicsForm(I18nModelForm):
             'location',
             'geo_lat',
             'geo_lon',
-            'email',
         ]
         field_classes = {
             'date_from': SplitDateTimeField,
@@ -249,14 +247,6 @@ class EventWizardBasicsForm(I18nModelForm):
         self.fields['geo_lon'].widget.attrs['placeholder'] = _('Longitude, e.g. -74.0060')
         self.fields['slug'].widget.prefix = build_absolute_uri(self.organizer, 'presale:organizer.index')
         self.fields['slug'].widget.attrs.setdefault('class', 'form-control')
-        self.fields['email'].required = False
-        self.fields['email'].label = _('Organizer email address')
-        self.fields['email'].help_text = _("Attendees can reach you through a contact form. Messages will be forwarded to this address.")
-        email_initial = self.initial.get('email', self.fields['email'].initial)
-        normalized_email = normalize_organizer_email_initial(email_initial)
-        self.initial['email'] = normalized_email
-        self.fields['email'].initial = normalized_email
-        apply_organizer_email_placeholder(self.fields['email'])
 
         # Generate a unique slug if none provided
         if not self.initial.get('slug'):
@@ -588,7 +578,6 @@ class EventSettingsForm(SettingsForm):
     )
 
     auto_fields = [
-        'checkout_email_helptext',
         'presale_has_ended_text',
         'voucher_explanation_text',
         'checkout_success_text',
@@ -631,7 +620,6 @@ class EventSettingsForm(SettingsForm):
         'attendee_data_explanation_text',
         'order_phone_asked',
         'order_phone_required',
-        'checkout_phone_helptext',
         'banner_text',
         'banner_text_bottom',
         'order_email_asked',
@@ -761,7 +749,6 @@ class GeneralEventSettingsForm(EventSettingsForm):
     """
 
     auto_fields = [
-        'checkout_email_helptext',
         'presale_has_ended_text',
         'voucher_explanation_text',
         'checkout_success_text',
@@ -789,7 +776,6 @@ class GeneralEventSettingsForm(EventSettingsForm):
         'event_list_type',
         'event_list_available_only',
         'event_info_text',
-        'checkout_phone_helptext',
         'banner_text',
         'banner_text_bottom',
         'allow_modifications',
@@ -831,6 +817,8 @@ class OrderFormSettingsForm(EventSettingsForm):
         'require_registered_account_for_tickets',
         'include_wikimedia_username',
         'checkout_show_copy_answers_button',
+        'checkout_email_helptext',
+        'checkout_phone_helptext',
     ]
 
     def __init__(self, *args, **kwargs):
@@ -1141,7 +1129,6 @@ class InvoiceSettingsForm(SettingsForm):
         'invoice_additional_text',
         'invoice_footer_text',
         'invoice_eu_currencies',
-        'invoice_logo_image',
     ]
 
     invoice_generate_sales_channels = forms.MultipleChoiceField(
@@ -1650,6 +1637,11 @@ class EventDeleteForm(forms.Form):
 
 
 class QuickSetupForm(I18nForm):
+    currency = forms.ChoiceField(
+        label=_('Event currency'),
+        choices=Event.CURRENCY_CHOICES,
+        required=True,
+    )
     show_quota_left = forms.BooleanField(
         label=_('Show number of tickets left'),
         help_text=_('Publicly show how many tickets of a certain type are still available.'),
