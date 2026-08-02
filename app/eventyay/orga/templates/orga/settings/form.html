@@ -22,7 +22,7 @@
 {% block extra_title %}{% translate "Settings" %} :: {% endblock extra_title %}
 
 {% block settings_content %}
-    {% trans "General settings" as header_title %}
+    {% trans "Talk settings" as header_title %}
     {% include "common/includes/header_nav.html" with header_title=header_title %}
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
