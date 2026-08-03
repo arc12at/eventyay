@@ -15,6 +15,7 @@ class TicketOutputPdfApp(AppConfig):
         category = 'FORMAT'
         featured = True
         description = _('This plugin allows you to print out tickets as PDF files')
+        visible = False
 
     def ready(self):
         from . import signals  # NOQA
