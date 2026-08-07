@@ -4,6 +4,10 @@
         <div class="navigation-title">
             <h2>{{ header_title }}{% if header_title_extra %} {{ header_title_extra|safe }}{% endif %}</h2>
         </div>
-        {% include "orga/event/component_link.html" %}
+        {% if nav_link_template %}
+            {% include nav_link_template %}
+        {% else %}
+            {% include "orga/event/component_link.html" %}
+        {% endif %}
     </div>
 </nav>
