@@ -62,8 +62,8 @@
             <div id="{{ e.identifier }}">
                 <div class="panel-body">
                     <form action="{% url "control:event.orders.export.do" event=request.event.slug organizer=request.organizer.slug %}"
-                            method="post" class="form-horizontal" data-asynctask data-asynctask-download
-                            data-asynctask-long>
+                            method="post" class="form-horizontal" data-export-task data-export-task-download
+                            data-export-task-long>
                         {% csrf_token %}
                         <input type="hidden" name="exporter" value="{{ e.identifier }}" />
                         {% bootstrap_form e.form layout='control' %}

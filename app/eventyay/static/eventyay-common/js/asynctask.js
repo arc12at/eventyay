@@ -1,34 +1,37 @@
 /**
- * Import-specific async task handler.
- * Intercepts forms with [data-import-task] and shows a loading overlay
- * with progress bar, minimize button, and session persistence.
+ * Import/Export async task handler.
+ * Intercepts forms with [data-import-task] or [data-export-task] and shows a
+ * loading overlay with progress bar, minimize button, and session persistence.
  *
- * This script is ONLY for import flows (attendees, speakers, schedule).
- * General async tasks (exports, downloads, etc.) are handled by
- * pretixbase/js/asynctask.js via [data-asynctask].
+ * This script is for import/export flows (attendees, speakers, schedule, orders).
+ * General async tasks are handled by pretixbase/js/asynctask.js via [data-asynctask].
  */
 
+let currentTaskType = null // 'import' or 'export'
 let taskId = null
 let checkUrl = null
 let pollTimeout = null
 let isLong = false
 let isSubmitting = false
+let isDownload = false
 
-const modal = () => {
-    let el = document.getElementById('import-loadingmodal')
+const getStorageKey = (type) => `eventyay_async_task_${type}`
+
+const modal = (type) => {
+    let el = document.getElementById(`${type}-loadingmodal`)
     if (!el) {
         const original = document.getElementById('loadingmodal')
         if (original) {
             el = original.cloneNode(true)
-            el.id = 'import-loadingmodal'
+            el.id = `${type}-loadingmodal`
             document.body.appendChild(el)
         }
     }
     return el
 }
 
-const show = (headline) => {
-    const el = modal()
+const show = (headline, type) => {
+    const el = modal(type)
     if (!el) return
     const h3 = el.querySelector('h3')
     if (h3) h3.textContent = headline
@@ -41,12 +44,12 @@ const show = (headline) => {
     }
     const minimizeBtn = el.querySelector('.loadingmodal-minimize')
     if (minimizeBtn) minimizeBtn.style.display = ''
-    document.body.classList.remove('import-loading-minimized')
-    document.body.classList.add('import-loading')
-    document.body.classList.add('is-import-task')
+    document.body.classList.remove(`${type}-loading-minimized`)
+    document.body.classList.add(`${type}-loading`)
+    document.body.classList.add(`is-${type}-task`)
 }
 
-const hide = () => {
+const hide = (type) => {
     if (pollTimeout) {
         clearTimeout(pollTimeout)
         pollTimeout = null
@@ -54,32 +57,33 @@ const hide = () => {
     taskId = null
     checkUrl = null
     isSubmitting = false
-    document.body.classList.remove('import-loading')
-    document.body.classList.remove('import-loading-minimized')
-    document.body.classList.remove('is-import-task')
-    sessionStorage.removeItem('eventyay_async_task_import')
+    document.body.classList.remove(`${type}-loading`)
+    document.body.classList.remove(`${type}-loading-minimized`)
+    document.body.classList.remove(`is-${type}-task`)
+    sessionStorage.removeItem(getStorageKey(type))
+    currentTaskType = null
 }
 
-const setStatus = (text) => {
-    const el = modal()
+const setStatus = (text, type) => {
+    const el = modal(type)
     if (!el) return
     const p = el.querySelector('p.status')
     if (p) p.textContent = text
 }
 
-const setProgress = (pct) => {
-    const el = modal()
+const setProgress = (pct, type) => {
+    const el = modal(type)
     if (!el) return
     const progress = el.querySelector('.progress')
     const bar = el.querySelector('.progress-bar')
     if (progress) progress.style.display = ''
     if (bar) {
-        bar.classList.remove('progress-bar-striped', 'active')
         bar.style.width = pct + '%'
     }
 }
 
 const poll = () => {
+    const type = currentTaskType
     fetch(checkUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
         .then(r => {
             if (!r.ok) {
@@ -89,10 +93,10 @@ const poll = () => {
         })
         .then(data => {
             if (data.ready) {
-                const bar = document.querySelector('#import-loadingmodal .progress-bar')
-                const btnIcon = document.querySelector('#import-loadingmodal .loadingmodal-minimize i')
-                const h3 = document.querySelector('#import-loadingmodal h3')
-                const bigIcon = document.querySelector('#import-loadingmodal .big-rotating-icon')
+                const bar = document.querySelector(`#${type}-loadingmodal .progress-bar`)
+                const btnIcon = document.querySelector(`#${type}-loadingmodal .loadingmodal-minimize i`)
+                const h3 = document.querySelector(`#${type}-loadingmodal h3`)
+                const bigIcon = document.querySelector(`#${type}-loadingmodal .big-rotating-icon`)
 
                 if (bar) {
                     bar.classList.remove('progress-bar-striped', 'active')
@@ -119,38 +123,45 @@ const poll = () => {
                     }
                 }
 
-                sessionStorage.removeItem('eventyay_async_task_import')
+                sessionStorage.removeItem(getStorageKey(type))
 
                 setTimeout(() => {
-                    hide()
+                    hide(type)
+                    if (data.redirect && (data.success || typeof data.success === 'undefined')) {
+                        location.href = data.redirect
+                    }
                 }, 2000)
                 return
             }
             if (typeof data.percentage === 'number') {
-                setProgress(data.percentage)
+                setProgress(data.percentage, type)
             }
             if (isLong) {
                 if (data.started) {
-                    setStatus(gettext('Your request is currently being processed. Depending on the size of your event, this might take up to a few minutes.'))
+                    setStatus(gettext('Your request is currently being processed. Depending on the size of your event, this might take up to a few minutes.'), type)
                 } else {
-                    setStatus(gettext('Your request has been queued on the server and will soon be processed.'))
+                    setStatus(gettext('Your request has been queued on the server and will soon be processed.'), type)
                 }
             }
             pollTimeout = setTimeout(poll, 250)
         })
-        .catch(() => {
+        .catch((err) => {
+            setStatus(gettext('We currently cannot reach the server, but we keep trying. ') + err.message, type)
             pollTimeout = setTimeout(poll, 5000)
         })
 }
 
-const submit = (form) => {
+const submit = (form, type) => {
     if (isSubmitting) return
     isSubmitting = true
+    currentTaskType = type
 
-    const headline = form.dataset.importTaskHeadline || gettext('We are processing your request …')
-    isLong = form.hasAttribute('data-import-task-long')
-    show(headline)
-    setStatus(gettext('We are currently sending your request to the server.'))
+    const headline = form.getAttribute(`data-${type}-task-headline`) || gettext('We are processing your request …')
+    isLong = form.hasAttribute(`data-${type}-task-long`)
+    isDownload = form.hasAttribute(`data-${type}-task-download`)
+    
+    show(headline, type)
+    setStatus(gettext('We are currently sending your request to the server.'), type)
 
     const body = new URLSearchParams(new FormData(form))
     body.append('ajax', '1')
@@ -172,7 +183,7 @@ const submit = (form) => {
                 } else {
                     document.documentElement.replaceWith(newDoc.documentElement)
                 }
-                hide()
+                hide(type)
                 return null
             }
             if (!r.ok) {
@@ -183,7 +194,7 @@ const submit = (form) => {
         .then(data => {
             if (!data) return
             if (data.redirect) {
-                hide()
+                hide(type)
                 location.href = data.redirect
                 return
             }
@@ -193,93 +204,117 @@ const submit = (form) => {
             taskId = data.async_id
             checkUrl = data.check_url
 
-            sessionStorage.setItem('eventyay_async_task_import', JSON.stringify({
+            sessionStorage.setItem(getStorageKey(type), JSON.stringify({
                 id: taskId,
                 checkUrl: checkUrl,
                 isLong: isLong,
-                headline: document.querySelector('#import-loadingmodal h3') ? document.querySelector('#import-loadingmodal h3').textContent : '',
-                minimized: document.body.classList.contains('import-loading-minimized'),
+                isDownload: isDownload,
+                headline: document.querySelector(`#${type}-loadingmodal h3`) ? document.querySelector(`#${type}-loadingmodal h3`).textContent : '',
+                minimized: document.body.classList.contains(`${type}-loading-minimized`),
                 path: location.pathname
             }))
 
             if (isLong && data.started) {
-                setStatus(gettext('Your request is currently being processed. Depending on the size of your event, this might take up to a few minutes.'))
+                setStatus(gettext('Your request is currently being processed. Depending on the size of your event, this might take up to a few minutes.'), type)
             }
             pollTimeout = setTimeout(poll, 100)
         })
         .catch(() => {
-            hide()
+            hide(type)
             alert(gettext('An error occurred. Please try again.'))
         })
 }
 
-const init = () => {
-    const importForms = document.querySelectorAll('form[data-import-task]')
-    const storedTask = sessionStorage.getItem('eventyay_async_task_import')
-    if (importForms.length > 0 || storedTask) {
-        const content = document.querySelector('#loadingmodal .modal-card-content')
-        if (content && !content.querySelector('.loadingmodal-minimize')) {
-            const div = document.createElement('div')
-            div.className = 'pull-right'
-            const btn = document.createElement('button')
-            btn.type = 'button'
-            btn.className = 'btn btn-default btn-xs loadingmodal-minimize'
-            btn.title = gettext('Minimize')
-            const icon = document.createElement('i')
-            icon.className = 'fa fa-window-minimize'
-            btn.appendChild(icon)
-            div.appendChild(btn)
-            content.insertBefore(div, content.firstChild)
+const restoreTask = (type) => {
+    const storedTask = sessionStorage.getItem(getStorageKey(type))
+    if (!storedTask) return false
+
+    try {
+        const task = JSON.parse(storedTask)
+        taskId = task.id
+        checkUrl = task.checkUrl
+        isLong = task.isLong
+        isDownload = task.isDownload
+        currentTaskType = type
+
+        show(task.headline || gettext('We are processing your request …'), type)
+        
+        // Auto-minimize if we navigated to a different page while task is running
+        if (task.minimized || task.path !== location.pathname) {
+            document.body.classList.add(`${type}-loading-minimized`)
+            if (!task.minimized) {
+                task.minimized = true
+                task.path = location.pathname
+                sessionStorage.setItem(getStorageKey(type), JSON.stringify(task))
+            }
         }
+
+        pollTimeout = setTimeout(poll, 100)
+        return true
+    } catch (e) {
+        sessionStorage.removeItem(getStorageKey(type))
+        return false
     }
+}
+
+const init = () => {
+    ['import', 'export'].forEach(type => {
+        const forms = document.querySelectorAll(`form[data-${type}-task]`)
+        const storedTask = sessionStorage.getItem(getStorageKey(type))
+        if (forms.length > 0 || storedTask) {
+            const content = document.querySelector('#loadingmodal .modal-card-content')
+            if (content && !content.querySelector('.loadingmodal-minimize')) {
+                const div = document.createElement('div')
+                div.className = 'pull-right'
+                const btn = document.createElement('button')
+                btn.type = 'button'
+                btn.className = 'btn btn-default btn-xs loadingmodal-minimize'
+                btn.title = gettext('Minimize')
+                const icon = document.createElement('i')
+                icon.className = 'fa fa-window-minimize'
+                btn.appendChild(icon)
+                div.appendChild(btn)
+                content.insertBefore(div, content.firstChild)
+            }
+        }
+    })
 
     document.addEventListener('submit', (e) => {
-        const form = e.target.closest('form[data-import-task]')
-        if (!form) return
-        e.preventDefault()
-        submit(form)
+        const importForm = e.target.closest('form[data-import-task]')
+        const exportForm = e.target.closest('form[data-export-task]')
+        
+        if (importForm) {
+            e.preventDefault()
+            submit(importForm, 'import')
+        } else if (exportForm) {
+            e.preventDefault()
+            submit(exportForm, 'export')
+        }
     })
 
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.loadingmodal-minimize')
         if (!btn) return
         e.preventDefault()
-        document.body.classList.toggle('import-loading-minimized')
+        
+        const type = document.body.classList.contains('is-import-task') ? 'import' : 
+                     (document.body.classList.contains('is-export-task') ? 'export' : null)
+        if (!type) return
 
-        const storedTask = sessionStorage.getItem('eventyay_async_task_import')
+        document.body.classList.toggle(`${type}-loading-minimized`)
+
+        const storedTask = sessionStorage.getItem(getStorageKey(type))
         if (storedTask) {
             try {
                 const task = JSON.parse(storedTask)
-                task.minimized = document.body.classList.contains('import-loading-minimized')
-                sessionStorage.setItem('eventyay_async_task_import', JSON.stringify(task))
+                task.minimized = document.body.classList.contains(`${type}-loading-minimized`)
+                sessionStorage.setItem(getStorageKey(type), JSON.stringify(task))
             } catch (err) {}
         }
     })
 
-    if (storedTask) {
-        try {
-            const task = JSON.parse(storedTask)
-            taskId = task.id
-            checkUrl = task.checkUrl
-            isLong = task.isLong
-
-            show(task.headline || gettext('We are processing your request …'))
-            
-            // Auto-minimize if we navigated to a different page while task is running
-            // to avoid blocking non-import pages (e.g. export tickets)
-            if (task.minimized || task.path !== location.pathname) {
-                document.body.classList.add('import-loading-minimized')
-                if (!task.minimized) {
-                    task.minimized = true
-                    task.path = location.pathname
-                    sessionStorage.setItem('eventyay_async_task_import', JSON.stringify(task))
-                }
-            }
-
-            pollTimeout = setTimeout(poll, 100)
-        } catch (e) {
-            sessionStorage.removeItem('eventyay_async_task_import')
-        }
+    if (!restoreTask('import')) {
+        restoreTask('export')
     }
 }
 
