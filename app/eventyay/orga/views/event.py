@@ -77,7 +77,9 @@ class EventDetail(EventSettingsPermission, ActionFromUrl, UpdateView):
 
     @context
     def tablist(self):
-        return {}
+        return {
+            'general': _('General settings'),
+        }
 
     def get_success_url(self) -> str:
         return self.object.orga_urls.settings
