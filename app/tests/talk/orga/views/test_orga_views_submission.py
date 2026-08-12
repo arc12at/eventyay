@@ -104,6 +104,36 @@ def test_orga_can_see_single_submission(orga_client, event, submission):
 
 
 @pytest.mark.django_db
+def test_submission_content_always_shows_tags_row(orga_client, event, submission, track):
+    with scope(event=event):
+        submission.track = track
+        submission.save()
+        assert submission.tags.count() == 0
+
+    response = orga_client.get(submission.orga_urls.base, follow=True)
+    assert response.status_code == 200
+    content = response.text
+    assert "No tags" in content
+    assert 'id="tags-dropdown"' in content
+    assert 'id="submission-tags-data"' in content
+    assert "color-square" in content
+    assert track.color in content
+    assert "submission_tags.js" in content
+
+
+@pytest.mark.django_db
+def test_submission_content_shows_assigned_tags(orga_client, event, submission, tag):
+    with scope(event=event):
+        submission.tags.add(tag)
+
+    response = orga_client.get(submission.orga_urls.base, follow=True)
+    assert response.status_code == 200
+    assert tag.tag in response.text
+    assert "No tags" not in response.text
+    assert 'id="tags-dropdown"' in response.text
+
+
+@pytest.mark.django_db
 def test_orga_can_see_submission_404(orga_client, event, submission):
     response = orga_client.get(submission.orga_urls.base + "JJ", follow=True)
     assert response.status_code == 404
