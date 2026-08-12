@@ -8,12 +8,14 @@
 {% block content %}
     {% if request.event.has_subevents %}
         {% trans "Event series" as date_range %}
+        {% with header_extra="<small class='event-date text-muted'>"|add:date_range|add:"</small>" %}
+            {% include "common/includes/header_nav.html" with header_title=request.event.name header_component_link="eventyay_common/event/component_link.html" header_title_extra=header_extra %}
+        {% endwith %}
+    {% else %}
+        {% with header_extra="<small class='event-date text-muted'>"|add:request.event.get_date_range_display|add:"</small>" %}
+            {% include "common/includes/header_nav.html" with header_title=request.event.name header_component_link="eventyay_common/event/component_link.html" header_title_extra=header_extra %}
+        {% endwith %}
     {% endif %}
-    {% with date_range=date_range|default:request.event.get_date_range_display %}
-    {% with header_extra="<small class='event-date text-muted'>"|add:date_range|add:"</small>" %}
-        {% include "common/includes/header_nav.html" with header_title=request.event.name header_component_link="eventyay_common/event/component_link.html" header_title_extra=header_extra %}
-    {% endwith %}
-    {% endwith %}
 
     {% eventsignal request.event "eventyay.control.signals.event_dashboard_top" request=request %}
     {% if actions|length > 0 %}
