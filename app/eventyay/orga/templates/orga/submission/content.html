@@ -293,7 +293,10 @@
 
 {% block scripts %}
     {{ block.super }}
-    {% compress js %}
-        <script defer src="{% static 'orga/js/submission_tags.js' %}"></script>
-    {% endcompress %}
+    {% has_event_perm 'base.update_submission' request.user request submission as can_manage_submission_tags %}
+    {% if can_manage_submission_tags %}
+        {% compress js %}
+            <script defer src="{% static 'orga/js/submission_tags.js' %}"></script>
+        {% endcompress %}
+    {% endif %}
 {% endblock scripts %}
