@@ -30,7 +30,7 @@ from django.utils.timezone import get_current_timezone_name
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import ListView, TemplateView
 from django_scopes import scope
-from pytz import timezone
+from zoneinfo import ZoneInfo
 from rest_framework import views
 from django.views import View
 from django.apps import apps

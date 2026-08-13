@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
-import pytz
+from zoneinfo import ZoneInfo
 from django.core import mail as djmail
 from django.test import TestCase
 from django.utils.timezone import make_aware, now
@@ -245,8 +245,8 @@ def test_expiry_last_relative_subevents(event):
 @pytest.mark.django_db
 def test_expiry_dst(event):
     event.settings.set('timezone', 'Europe/Berlin')
-    tz = pytz.timezone('Europe/Berlin')
-    utc = pytz.timezone('UTC')
+    tz = ZoneInfo('Europe/Berlin')
+    utc = ZoneInfo('UTC')
     today = tz.localize(datetime(2016, 10, 29, 12, 0, 0)).astimezone(utc)
     order = _create_order(
         event,

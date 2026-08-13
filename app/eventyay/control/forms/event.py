@@ -21,7 +21,8 @@ from i18nfield.forms import (
     I18nTextarea,
     I18nTextInput,
 )
-from pytz import common_timezones, timezone
+from zoneinfo import ZoneInfo
+from eventyay.timezones import common_timezones
 
 from eventyay.base.channels import get_all_sales_channels
 from eventyay.base.email import get_available_placeholders

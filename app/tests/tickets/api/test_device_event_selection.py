@@ -1,11 +1,11 @@
 from datetime import datetime
 
 import pytest
-import pytz
+from zoneinfo import ZoneInfo
 from django_scopes import scopes_disabled
 from freezegun import freeze_time
 
-tz = pytz.timezone('Asia/Tokyo')
+tz = ZoneInfo('Asia/Tokyo')
 
 
 @pytest.mark.django_db

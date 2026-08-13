@@ -22,7 +22,7 @@ from django.utils.html import conditional_escape
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from pypdf import PdfReader
-from pytz import timezone
+from zoneinfo import ZoneInfo
 from reportlab.graphics import renderPDF
 from reportlab.graphics.barcode.qr import QrCodeWidget
 from reportlab.graphics.shapes import Drawing

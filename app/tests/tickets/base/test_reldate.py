@@ -1,14 +1,14 @@
 from datetime import datetime, time
 
 import pytest
-import pytz
+from zoneinfo import ZoneInfo
 from django_scopes import scope
 
 from eventyay.base.models import Event, Organizer
 from eventyay.base.reldate import RelativeDate, RelativeDateWrapper
 
-TOKYO = pytz.timezone('Asia/Tokyo')
-BERLIN = pytz.timezone('Europe/Berlin')
+TOKYO = ZoneInfo('Asia/Tokyo')
+BERLIN = ZoneInfo('Europe/Berlin')
 
 
 @pytest.fixture

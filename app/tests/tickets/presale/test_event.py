@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
-from pytz import timezone
+from zoneinfo import ZoneInfo
 
 from eventyay.base.models import (
     Event,

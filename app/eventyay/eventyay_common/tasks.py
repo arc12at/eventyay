@@ -5,7 +5,7 @@ from datetime import timezone as tz
 from decimal import Decimal
 from typing import Optional, Tuple
 
-import pytz
+from zoneinfo import ZoneInfo
 import requests
 from celery import shared_task
 from dateutil.relativedelta import relativedelta
@@ -433,7 +433,7 @@ def retry_failed_payment(self):
     pending_invoices = BillingInvoice.objects.filter(status=BillingInvoice.STATUS_PENDING)
     today = datetime.now(tz.utc)
     logger.info('Start - running task to retry failed payment: %s', today)
-    timezone = pytz.timezone(settings.TIME_ZONE)
+    timezone = ZoneInfo(settings.TIME_ZONE)
     for invoice in pending_invoices:
         if invoice.final_ticket_fee <= 0:
             continue
@@ -463,7 +463,7 @@ def check_billing_status_for_warning(self):
     pending_invoices = BillingInvoice.objects.filter(status=BillingInvoice.STATUS_PENDING, reminder_enabled=True)
     today = datetime.now(tz.utc)
     logger.info('Start - running task to check billing status for warning on: %s', today)
-    timezone = pytz.timezone(settings.TIME_ZONE)
+    timezone = ZoneInfo(settings.TIME_ZONE)
     for invoice in pending_invoices:
         if invoice.final_ticket_fee <= 0:
             continue
