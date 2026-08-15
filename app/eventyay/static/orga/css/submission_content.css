@@ -59,6 +59,7 @@
     flex-shrink: 0;
     margin-right: 0;
     vertical-align: middle;
+    background-color: var(--track-color, #cccccc);
 }
 
 .submission-content-view .form-group .col-md-9.submission-tags-row {

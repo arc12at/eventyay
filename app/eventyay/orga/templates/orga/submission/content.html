@@ -38,7 +38,7 @@
             <label class="col-md-3 col-form-label">{% translate "Proposal title" %}</label>
             <div class="col-md-9">
                 <strong class="submission-title-with-track">
-                    <span class="color-square" style="background-color: {{ submission.track.color|default:'#cccccc' }}"{% if submission.track %} title="{{ submission.track.name }}"{% endif %}></span>
+                    <span class="color-square" style="--track-color: {{ submission.track.color|default:'#cccccc' }}"{% if submission.track %} title="{{ submission.track.name }}"{% endif %}></span>
                     <span>{{ submission.title }}</span>
                 </strong>
             </div>
