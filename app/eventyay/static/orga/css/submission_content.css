@@ -61,8 +61,8 @@
     vertical-align: middle;
 }
 
-.submission-tags-row {
-    display: flex !important;
+.submission-content-view .form-group .col-md-9.submission-tags-row {
+    display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.35rem 0.5rem;
@@ -131,9 +131,8 @@
 }
 
 /* Higher specificity so form-group label styles do not break the list. */
-.submission-content-view .form-group #tags-dropdown .tag-dropdown-item,
-#tags-dropdown .tag-dropdown-item {
-    display: flex !important;
+.submission-content-view .form-group #tags-dropdown label.tag-dropdown-item {
+    display: flex;
     align-items: flex-start;
     gap: 0.5rem;
     width: 100%;
