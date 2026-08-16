@@ -5,6 +5,31 @@
 {% load presale_locale %}
 {% block agenda_custom_header %}
     {% include "cfp/includes/forms_header.html" %}
+    <style>
+        .star-rating legend {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        .rating-stars {
+            display: inline-flex;
+            flex-direction: row-reverse;
+        }
+        .rating-stars input[type="radio"] {
+            display: none;
+        }
+        .rating-stars label {
+            font-size: 2rem;
+            color: #ccc;
+            cursor: pointer;
+            padding: 0 0.1rem;
+            transition: color 0.2s;
+        }
+        .rating-stars input[type="radio"]:checked ~ label,
+        .rating-stars label:hover,
+        .rating-stars label:hover ~ label {
+            color: #ffc107;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -26,7 +51,34 @@
                 {% else %}
                     <form method="post">
                         {% csrf_token %}
-                        {{ form }}
+                        {% if form.speaker %}
+                            <div class="form-group mb-3">
+                                {{ form.speaker.label_tag }}
+                                {{ form.speaker }}
+                                {{ form.speaker.errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="form-group mb-3">
+                            <fieldset class="star-rating" aria-label="{% translate 'Rating (optional)' %}">
+                                <legend>{% translate 'Rating' %} <span class="text-muted">({% translate 'optional' %})</span></legend>
+                                <div class="rating-stars">
+                                    {% for radio in form.rating %}
+                                        {{ radio.tag }}
+                                        <label for="{{ radio.id_for_label }}" title="{{ radio.choice_label }} {% translate 'stars' %}">
+                                            ★
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                {{ form.rating.errors }}
+                            </fieldset>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            {{ form.review.label_tag }}
+                            {{ form.review }}
+                            {{ form.review.errors }}
+                        </div>
                         <button type="submit" class="btn-success float-right">{{ phrases.base.send }}</button>
                     </form>
                 {% endif %}
