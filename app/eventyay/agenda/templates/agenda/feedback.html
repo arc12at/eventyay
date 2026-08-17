@@ -24,7 +24,7 @@
                 {% if opinion.rating %}
                     <div class="feedback-rating mb-2" aria-label="{% translate 'Rating' %}: {{ opinion.rating }} / 5" title="{% translate 'Rating' %}: {{ opinion.rating }} / 5">
                         {% for i in "12345"|make_list %}
-                            <span style="color: {% if forloop.counter <= opinion.rating %}#ffc107{% else %}#ccc{% endif %}; font-size: 1.2rem;">★</span>
+                            <span class="{% if forloop.counter <= opinion.rating %}text-warning{% else %}text-muted{% endif %}">★</span>
                         {% endfor %}
                     </div>
                 {% endif %}

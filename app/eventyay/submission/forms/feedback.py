@@ -36,7 +36,7 @@ class FeedbackForm(ReadOnlyFlag, forms.ModelForm):
         widgets = {
             'review': MarkdownWidget,
             'rating': forms.RadioSelect(
-                choices=[(i, str(i)) for i in range(1, 6)],
+                choices=[(i, str(i)) for i in range(5, 0, -1)],
                 attrs={'class': 'star-rating-input'},
             ),
         }
