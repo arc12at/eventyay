@@ -126,11 +126,16 @@ const initSubmissionTags = () => {
             .sort((a, b) => a.tag.localeCompare(b.tag))
             .forEach((tag) => {
                 const badge = document.createElement('span')
-                badge.className = 'badge'
+                badge.className = 'badge mr-1 mb-1'
                 badge.setAttribute('data-tag-id', String(tag.id))
                 badge.textContent = tag.tag
                 if (tag.color) {
                     badge.style.backgroundColor = tag.color
+                    if (tag.foreground_color === 'white') {
+                        badge.classList.add('text-white')
+                    } else if (tag.foreground_color === 'black') {
+                        badge.classList.add('text-dark')
+                    }
                 }
                 tagsDisplayContainer.appendChild(badge)
             })

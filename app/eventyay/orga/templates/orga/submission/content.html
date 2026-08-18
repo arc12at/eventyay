@@ -66,7 +66,7 @@
                 <div id="submission-tags-display" class="submission-tags-display" data-no-tags-label="{% translate 'No tags' %}">
                     {% if submission.tags.all %}
                         {% for tag in submission.tags.all %}
-                            <span class="badge" {% if tag.color %}style="background-color: {{ tag.color }}"{% endif %} data-tag-id="{{ tag.id }}">{{ tag.tag }}</span>
+                            <span class="badge mr-1 mb-1 {% if tag.foreground_color == 'white' %}text-white{% elif tag.foreground_color == 'black' %}text-dark{% endif %}" {% if tag.color %}style="background-color: {{ tag.color }}"{% endif %} data-tag-id="{{ tag.id }}">{{ tag.tag }}</span>
                         {% endfor %}
                     {% else %}
                         <span class="text-muted" id="no-tags-text">{% translate "No tags" %}</span>

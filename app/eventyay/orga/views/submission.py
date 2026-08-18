@@ -617,6 +617,7 @@ class SubmissionContentView(SubmissionContent):
                     'id': tag.id,
                     'tag': tag.tag,
                     'color': tag.color,
+                    'foreground_color': tag.foreground_color,
                     'description': description or '',
                 }
             )

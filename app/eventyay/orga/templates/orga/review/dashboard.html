@@ -189,7 +189,7 @@
                             {% if filter_form.tags %}<td class="col-tags">
                                 <div class="d-flex flex-wrap">
                                     {% for tag in submission.tags.all %}
-                                        <span class="badge" {% if tag.color %}style="background-color: {{ tag.color }}"{% endif %}>{{ tag.tag }}</span>
+                                        <span class="badge mr-1 mb-1 {% if tag.foreground_color == 'white' %}text-white{% elif tag.foreground_color == 'black' %}text-dark{% endif %}" {% if tag.color %}style="background-color: {{ tag.color }}"{% endif %}>{{ tag.tag }}</span>
                                     {% endfor %}
                                 </div>
                             </td>{% endif %}
