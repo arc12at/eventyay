@@ -649,7 +649,7 @@ dialog.agenda-wip-preview-leave-dialog::backdrop {
   gap: 1rem;
 }
 .rating-label {
-  font-size: 1.1rem;
+  font-size: 16px;
   line-height: 1;
   font-weight: bold;
   margin-bottom: 0;
@@ -662,7 +662,7 @@ dialog.agenda-wip-preview-leave-dialog::backdrop {
   display: none;
 }
 .rating-stars label {
-  font-size: 1.1rem;
+  font-size: 28px !important;
   line-height: 1;
   color: #ccc;
   cursor: pointer;
