@@ -662,7 +662,7 @@ dialog.agenda-wip-preview-leave-dialog::backdrop {
   display: none;
 }
 .rating-stars label {
-  font-size: 28px !important;
+  font-size: 28px;
   line-height: 1;
   color: #ccc;
   cursor: pointer;
