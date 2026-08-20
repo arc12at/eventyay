@@ -89,7 +89,7 @@ def test_validate_badge_hidden_fields_rejects_required(badge_customization_env):
 
 
 @pytest.mark.django_db
-def test_badge_options_field_clean_rejects_required(badge_customization_env):
+def test_badge_options_field_clean_auto_adds_required(badge_customization_env):
     # Setup field with required_keys
     field = BadgeOptionsField(
         choices=[('attendee_name', 'Name'), ('attendee_company', 'Company')],
@@ -100,15 +100,13 @@ def test_badge_options_field_clean_rejects_required(badge_customization_env):
     result = field.clean(['attendee_name'])
     assert result == ['attendee_company']
 
-    # User submits empty selection (both hidden) - should fail because name is required
-    with pytest.raises(ValidationError) as exc:
-        field.clean([])
-    assert 'required and cannot be removed: attendee_name' in str(exc.value)
+    # User submits empty selection (both hidden in POST because required is disabled) - should auto-add name
+    result = field.clean([])
+    assert result == ['attendee_company']
 
-    # User submits only 'attendee_company' selected (attendee_name is hidden) - should fail
-    with pytest.raises(ValidationError) as exc:
-        field.clean(['attendee_company'])
-    assert 'required and cannot be removed: attendee_name' in str(exc.value)
+    # User submits only 'attendee_company' selected (attendee_name is hidden in POST) - should auto-add name
+    result = field.clean(['attendee_company'])
+    assert result == []
 
 
 @pytest.mark.django_db

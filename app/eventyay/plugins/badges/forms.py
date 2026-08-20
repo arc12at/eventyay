@@ -163,6 +163,10 @@ class BadgeOptionsField(forms.MultipleChoiceField):
         return format_badge_option_labels(visible_labels)
 
     def clean(self, value):
+        value = value or []
+        if isinstance(value, (list, tuple)):
+            value = list(set(value) | self.required_keys)
+            
         selected_values = set(super().clean(value))
         
         # ponytail: O(n) scan over small list — fine at badge-field scale
