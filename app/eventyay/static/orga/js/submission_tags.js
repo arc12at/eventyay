@@ -130,7 +130,7 @@ const initSubmissionTags = () => {
                 badge.setAttribute('data-tag-id', String(tag.id))
                 badge.textContent = tag.tag
                 if (tag.color) {
-                    badge.style.backgroundColor = tag.color
+                    badge.style.setProperty('--tag-color', tag.color)
                     if (tag.foreground_color === 'white') {
                         badge.classList.add('text-white')
                     } else if (tag.foreground_color === 'black') {
@@ -204,7 +204,7 @@ const initSubmissionTags = () => {
 
             const colorCircle = document.createElement('span')
             colorCircle.className = 'tag-color-circle'
-            colorCircle.style.backgroundColor = tag.color || '#cccccc'
+            colorCircle.style.setProperty('--tag-color', tag.color || '#cccccc')
             colorCircle.setAttribute('aria-hidden', 'true')
 
             const textWrap = document.createElement('span')

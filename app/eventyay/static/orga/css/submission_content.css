@@ -171,6 +171,7 @@
     margin-top: 0.2rem;
     display: inline-block;
     border: 1px solid rgba(0, 0, 0, 0.08);
+    background-color: var(--tag-color, #cccccc);
 }
 
 #tags-dropdown .tag-dropdown-text {
@@ -211,4 +212,8 @@
     font-size: 0.8125rem;
     border-top: 1px solid #f5c2c7;
     background: #f8d7da;
+}
+
+.submission-tags-display .badge {
+    background-color: var(--tag-color, #cccccc);
 }
