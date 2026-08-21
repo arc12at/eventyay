@@ -168,14 +168,4 @@ class BadgeOptionsField(forms.MultipleChoiceField):
             value = list(set(value) | self.required_keys)
             
         selected_values = set(super().clean(value))
-        
-        # ponytail: O(n) scan over small list — fine at badge-field scale
-        required_hidden = sorted(self.required_keys - selected_values)
-        if required_hidden:
-            raise ValidationError(
-                _('The following badge fields are required and cannot be removed: {fields}').format(
-                    fields=', '.join(required_hidden)
-                )
-            )
-            
         return [choice for choice in self._choice_order if choice not in selected_values]

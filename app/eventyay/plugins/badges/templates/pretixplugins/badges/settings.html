@@ -150,11 +150,9 @@
         const val = $(this).val();
         const $askUser = $('input[name="ask_user_fields"][value="' + val + '"]');
         if ($(this).is(':checked')) {
-          $askUser.prop('checked', true).on('click.readonly', function(e){ e.preventDefault(); });
-          $askUser.closest('label').css('opacity', '0.6').css('cursor', 'not-allowed');
+          $askUser.prop('checked', true).prop('disabled', true);
         } else {
-          $askUser.off('click.readonly');
-          $askUser.closest('label').css('opacity', '').css('cursor', '');
+          $askUser.prop('disabled', false);
         }
       });
       $('input[name="required_badge_fields"]').trigger('change');
