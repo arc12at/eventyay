@@ -23,9 +23,11 @@
     {% include "common/includes/header_nav.html" with header_title=header_title_var header_title_extra=header_extra_var header_component_link="pretixcontrol/event/component_link.html" %}
 
     <ul class="nav nav-tabs import-export-nav-tabs" role="tablist">
+        {% if "can_view_orders" in request.eventpermset %}
         <li role="presentation" {% if active_tab == "export" %}class="active"{% endif %}>
             <a href="#tab-export" aria-controls="tab-export" role="tab" data-toggle="tab">{% trans "Export data" %}</a>
         </li>
+        {% endif %}
         {% if "can_change_orders" in request.eventpermset %}
         <li role="presentation" {% if active_tab == "import" %}class="active"{% endif %}>
             <a href="#tab-import" aria-controls="tab-import" role="tab" data-toggle="tab">{% trans "Import attendees" %}</a>
@@ -39,6 +41,7 @@
     </ul>
 
     <div class="tab-content import-export-tab-content">
+        {% if "can_view_orders" in request.eventpermset %}
         <!-- Export Tab -->
         <div role="tabpanel" class="tab-pane {% if active_tab == "export" %}active{% endif %}" id="tab-export">
             {% for e in exporters %}
@@ -87,6 +90,7 @@
                 </details>
             {% endif %}
         </div>
+        {% endif %}
 
         {% if "can_change_orders" in request.eventpermset %}
         <!-- Import Attendees Tab -->
@@ -139,6 +143,8 @@
                                 {% endblocktrans %}
                                 <a href="{% url 'plugins:banktransfer:import' organizer=request.organizer.slug %}"
                                    class="btn btn-default btn-xs">{% trans "Go to organizer-level import" %}</a>
+                                <a href="{% url 'plugins:banktransfer:refunds.list' event=request.event.slug organizer=request.organizer.slug %}"
+                                   class="btn btn-default btn-xs"><span class="fa fa-university"></span> {% trans "Export bank transfer refunds" %}</a>
                             </p>
 
                             <div class="row banktransfer-filter-row">

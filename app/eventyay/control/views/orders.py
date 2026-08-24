@@ -2741,6 +2741,8 @@ def get_banktransfer_import_context(request):
 class ExportMixin:
     @cached_property
     def exporters(self) -> list[BaseExporter]:
+        if 'can_view_orders' not in self.request.eventpermset:
+            return []
         exporters = []
         responses = register_data_exporters.send(self.request.event)
         for ex in sorted(
@@ -2773,9 +2775,29 @@ class ExportMixin:
         ctx = super().get_context_data(**kwargs)
         ctx['exporters'] = self.exporters
         ctx.update(get_banktransfer_import_context(self.request))
-        active_tab = self.request.GET.get('tab', 'export')
-        if active_tab == 'import' and 'can_change_orders' not in self.request.eventpermset:
-            active_tab = 'export'
+
+        can_view_orders = 'can_view_orders' in self.request.eventpermset
+        can_change_orders = 'can_change_orders' in self.request.eventpermset
+        has_banktransfer = (
+            'can_manage_bank_transfers' in self.request.eventpermset
+            and 'eventyay.plugins.banktransfer' in self.request.event.get_plugins()
+        )
+
+        default_tab = 'export'
+        if not can_view_orders:
+            if can_change_orders:
+                default_tab = 'import'
+            elif has_banktransfer:
+                default_tab = 'banktransfer'
+
+        active_tab = self.request.GET.get('tab', default_tab)
+        if active_tab == 'export' and not can_view_orders:
+            active_tab = default_tab
+        elif active_tab == 'import' and not can_change_orders:
+            active_tab = default_tab
+        elif active_tab == 'banktransfer' and not has_banktransfer:
+            active_tab = default_tab
+
         ctx['active_tab'] = active_tab
         return ctx
 
@@ -2849,7 +2871,7 @@ class ExportDoView(EventPermissionRequiredMixin, ExportMixin, AsyncAction, Templ
 
 
 class ExportView(EventPermissionRequiredMixin, ExportMixin, TemplateView):
-    permission = 'can_view_orders'
+    permission = ('can_view_orders', 'can_change_orders', 'can_manage_bank_transfers')
     template_name = 'pretixcontrol/orders/import_export.html'
 
 

@@ -229,54 +229,63 @@ def get_event_navigation(request: HttpRequest):
             }
         )
 
+    children = []
     if 'can_view_orders' in request.eventpermset:
-        children = [
-            {
-                'label': _('Overview'),
-                'url': reverse(
-                    'control:event.orders.overview',
-                    kwargs={
-                        'event': request.event.slug,
-                        'organizer': request.event.organizer.slug,
-                    },
-                ),
-                'active': 'event.orders.overview' in url.url_name,
-            },
-            {
-                'label': _('All orders'),
-                'url': reverse(
-                    'control:event.orders',
-                    kwargs={
-                        'event': request.event.slug,
-                        'organizer': request.event.organizer.slug,
-                    },
-                ),
-                'active': url.url_name in ('event.orders', 'event.order', 'event.orders.search')
-                or 'event.order.' in url.url_name,
-            },
-            {
-                'label': _('Waiting list'),
-                'url': reverse(
-                    'control:event.orders.waitinglist',
-                    kwargs={
-                        'event': request.event.slug,
-                        'organizer': request.event.organizer.slug,
-                    },
-                ),
-                'active': 'event.orders.waitinglist' in url.url_name,
-            },
-            {
-                'label': _('Refunds'),
-                'url': reverse(
-                    'control:event.orders.refunds',
-                    kwargs={
-                        'event': request.event.slug,
-                        'organizer': request.event.organizer.slug,
-                    },
-                ),
-                'active': 'event.orders.refunds' in url.url_name,
-            },
-        ]
+        children.extend(
+            [
+                {
+                    'label': _('Overview'),
+                    'url': reverse(
+                        'control:event.orders.overview',
+                        kwargs={
+                            'event': request.event.slug,
+                            'organizer': request.event.organizer.slug,
+                        },
+                    ),
+                    'active': 'event.orders.overview' in url.url_name,
+                },
+                {
+                    'label': _('All orders'),
+                    'url': reverse(
+                        'control:event.orders',
+                        kwargs={
+                            'event': request.event.slug,
+                            'organizer': request.event.organizer.slug,
+                        },
+                    ),
+                    'active': url.url_name in ('event.orders', 'event.order', 'event.orders.search')
+                    or 'event.order.' in url.url_name,
+                },
+                {
+                    'label': _('Waiting list'),
+                    'url': reverse(
+                        'control:event.orders.waitinglist',
+                        kwargs={
+                            'event': request.event.slug,
+                            'organizer': request.event.organizer.slug,
+                        },
+                    ),
+                    'active': 'event.orders.waitinglist' in url.url_name,
+                },
+                {
+                    'label': _('Refunds'),
+                    'url': reverse(
+                        'control:event.orders.refunds',
+                        kwargs={
+                            'event': request.event.slug,
+                            'organizer': request.event.organizer.slug,
+                        },
+                    ),
+                    'active': 'event.orders.refunds' in url.url_name,
+                },
+            ]
+        )
+
+    has_banktransfer = (
+        'eventyay.plugins.banktransfer' in request.event.get_plugins()
+        and 'can_manage_bank_transfers' in request.eventpermset
+    )
+    if 'can_view_orders' in request.eventpermset or 'can_change_orders' in request.eventpermset or has_banktransfer:
         children.append(
             {
                 'label': _('Import / Export'),
@@ -295,17 +304,21 @@ def get_event_navigation(request: HttpRequest):
                 ),
             }
         )
-        
+
+    if children:
+        parent_url = children[0]['url']
+        if 'can_view_orders' in request.eventpermset:
+            parent_url = reverse(
+                'control:event.orders',
+                kwargs={
+                    'event': request.event.slug,
+                    'organizer': request.event.organizer.slug,
+                },
+            )
         nav.append(
             {
                 'label': _('Orders'),
-                'url': reverse(
-                    'control:event.orders',
-                    kwargs={
-                        'event': request.event.slug,
-                        'organizer': request.event.organizer.slug,
-                    },
-                ),
+                'url': parent_url,
                 'active': False,
                 'icon': 'shopping-cart',
                 'children': children,
