@@ -49,3 +49,28 @@ Anke,Müller,anke@example.net
     assert b'Dieter' in r.content
     assert b'daniel@example.org' in r.content
     assert b'Anke' not in r.content
+
+
+@pytest.mark.django_db
+def test_import_export_page_loads(client, env):
+    client.login(email='dummy@dummy.dummy', password='dummy')
+    r = client.get('/control/event/dummy/dummy/orders/import-export/')
+    assert r.status_code == 200
+    assert b'Import / Export' in r.content
+    assert b'Export data' in r.content
+    assert b'Import attendees' in r.content
+    assert b'Import bank transfers' in r.content
+    assert b'Export bank transfer refunds' in r.content
+    assert b'pretixcontrol/css/import-export.css' in r.content
+    assert b'pretixcontrol/js/ui/import_export.js' in r.content
+
+
+@pytest.mark.django_db
+def test_import_export_page_specific_identifier_hides_banktransfer_refunds(client, env):
+    client.login(email='dummy@dummy.dummy', password='dummy')
+    r = client.get('/control/event/dummy/dummy/orders/import-export/?identifier=invoices')
+    assert r.status_code == 200
+    assert b'Export bank transfer refunds' not in r.content
+
+
+

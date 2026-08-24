@@ -281,14 +281,15 @@ def get_event_navigation(request: HttpRequest):
             {
                 'label': _('Import / Export'),
                 'url': reverse(
-                    'control:event.orders.export',
+                    'control:event.orders.import_export',
                     kwargs={
                         'event': request.event.slug,
                         'organizer': request.event.organizer.slug,
                     },
                 ),
                 'active': (
-                    'event.orders.export' in url.url_name
+                    'event.orders.import_export' in url.url_name
+                    or 'event.orders.export' in url.url_name
                     or 'event.orders.import' in url.url_name
                     or (url.namespace == 'plugins:banktransfer' and url.url_name in ('import', 'refunds.list', 'import.job'))
                 ),

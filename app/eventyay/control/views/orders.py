@@ -2670,85 +2670,16 @@ class OrderGo(EventPermissionRequiredMixin, View):
 
 
 def get_banktransfer_import_context(request):
-    from eventyay.plugins.banktransfer.models import BankTransaction, BankImportJob
-    from eventyay.plugins.banktransfer.views import BankTransactionFilterForm
-    from django.utils.timezone import now
-    from datetime import timedelta
-    from django.db.models import Q
-    from django.core.paginator import Paginator
-
-    ctx = {}
-    ctx['banktransfer_active'] = (
+    if (
         'eventyay.plugins.banktransfer' in request.event.get_plugins()
         and request.user.has_event_permission(
             request.organizer, request.event, 'can_manage_bank_transfers', request=request
         )
-    )
+    ):
+        from eventyay.plugins.banktransfer.views import get_event_banktransfer_context
 
-    if ctx['banktransfer_active']:
-        running_qs = BankImportJob.objects.filter(
-            Q(event=request.event) | Q(organizer=request.organizer)
-        )
-        ctx['job_running'] = running_qs.filter(
-            state=BankImportJob.STATE_RUNNING,
-            created__lte=now() - timedelta(minutes=30),  # safety timeout
-        ).first()
-
-        ctx['no_more_payments'] = False
-        if not request.event.has_subevents and request.event.settings.get('payment_term_last'):
-            if now() > request.event.payment_term_last:
-                ctx['no_more_payments'] = True
-
-        ctx['lastimport'] = (
-            BankImportJob.objects.filter(
-                state=BankImportJob.STATE_COMPLETED,
-                organizer=request.organizer,
-                event=request.event,
-            )
-            .order_by('created')
-            .last()
-        )
-        ctx['runningimport'] = (
-            BankImportJob.objects.filter(
-                state__in=[
-                    BankImportJob.STATE_PENDING,
-                    BankImportJob.STATE_RUNNING,
-                ],
-                organizer=request.organizer,
-                event=request.event,
-            )
-            .order_by('created')
-            .last()
-        )
-
-        qs = BankTransaction.objects.filter(event=request.event).select_related('order').filter(
-            state__in=[
-                BankTransaction.STATE_INVALID,
-                BankTransaction.STATE_ERROR,
-                BankTransaction.STATE_DUPLICATE,
-                BankTransaction.STATE_NOMATCH,
-            ]
-        )
-
-        filter_form = BankTransactionFilterForm(request.GET or None)
-        if filter_form.is_valid():
-            qs = filter_form.filter(qs)
-
-        qs = qs.order_by('-import_job__created')
-
-        page = request.GET.get('page', 1)
-        paginator = Paginator(qs, 30)
-        try:
-            page_obj = paginator.page(page)
-        except Exception:
-            page_obj = paginator.page(1)
-
-        ctx['transactions_unhandled'] = page_obj.object_list
-        ctx['page_obj'] = page_obj
-        ctx['is_paginated'] = page_obj.has_other_pages()
-        ctx['filter_form'] = filter_form
-
-    return ctx
+        return get_event_banktransfer_context(request)
+    return {}
 
 
 class ExportMixin:
@@ -2810,7 +2741,7 @@ class ExportDoView(EventPermissionRequiredMixin, ExportMixin, AsyncAction, Templ
         if self.exporter:
             query['identifier'] = self.exporter.identifier
         base_url = reverse(
-            'control:event.orders.export',
+            'control:event.orders.import_export',
             kwargs={
                 'event': self.request.event.slug,
                 'organizer': self.request.event.organizer.slug,
@@ -2834,7 +2765,7 @@ class ExportDoView(EventPermissionRequiredMixin, ExportMixin, AsyncAction, Templ
             messages.error(self.request, _('The selected exporter was not found.'))
             return redirect(
                 reverse(
-                    'control:event.orders.export',
+                    'control:event.orders.import_export',
                     kwargs={
                         'event': self.request.event.slug,
                         'organizer': self.request.event.organizer.slug,

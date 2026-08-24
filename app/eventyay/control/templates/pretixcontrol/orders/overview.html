@@ -15,7 +15,7 @@
     {% url "control:event.orders" organizer=request.event.organizer.slug event=request.event.slug as listurl %}
     {% trans "Order overview" as header_title_var %}
     {% captureas header_extra_var %}
-        <a href="{% url "control:event.orders.export" event=request.event.slug organizer=request.event.organizer.slug %}?identifier=pdfreport"
+        <a href="{% url 'control:event.orders.import_export' event=request.event.slug organizer=request.event.organizer.slug %}?identifier=pdfreport"
            class="btn btn-default" target="_blank">
             <span class="fa fa-download"></span>
             {% trans "PDF" %}

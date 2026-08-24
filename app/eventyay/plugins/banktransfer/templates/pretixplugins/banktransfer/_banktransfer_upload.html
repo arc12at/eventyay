@@ -23,7 +23,7 @@
             {% endblocktrans %}</p>
             {% if job_running %}
                 <div class="alert alert-info" data-job-waiting
-                     data-job-waiting-url="{% if request.event %}{% url "plugins:banktransfer:import.job" event=request.event.slug organizer=request.event.organizer.slug job=job_running.pk %}{% else %}{% url "plugins:banktransfer:import.job" organizer=request.organizer.slug job=job_running.pk %}{% endif %}?ajax=1">
+                     data-job-waiting-url="{% if request.event %}{% url 'plugins:banktransfer:import.job' event=request.event.slug organizer=request.event.organizer.slug job=job_running.pk %}{% else %}{% url 'plugins:banktransfer:import.job' organizer=request.organizer.slug job=job_running.pk %}{% endif %}?ajax=1">
                     <span class="fa fa-cog fa-spin"></span>
                     {% trans "An import is currently being processed, please try again in a few minutes." %}
                 </div>
@@ -31,7 +31,7 @@
                 <form action="{% if request.event %}{% url 'plugins:banktransfer:import' event=request.event.slug organizer=request.organizer.slug %}{% else %}{% url 'plugins:banktransfer:import' organizer=request.organizer.slug %}{% endif %}" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="banktransfer-file-group">
-                        <label class="banktransfer-file-label" for="banktransfer-file" onclick="event.preventDefault();">{% trans "Import file" %} *</label>
+                        <span class="banktransfer-file-label">{% trans "Import file" %} *</span>
                         <div class="banktransfer-file-input-wrapper">
                             <input id="banktransfer-file" type="file" name="file" required/>
                         </div>

@@ -27,9 +27,7 @@ def control_nav_orga_import(sender, request=None, **kwargs):
 @receiver(html_head, dispatch_uid='banktransfer_html_head')
 def html_head_presale(sender, request=None, **kwargs):
     url = resolve(request.path_info)
-    if url.namespace == 'plugins:banktransfer' or (
-        url.namespace == 'control' and url.url_name in ('event.orders.export', 'event.orders.import')
-    ):
+    if url.namespace == 'plugins:banktransfer':
         template = get_template('pretixplugins/banktransfer/control_head.html')
         return template.render({})
     else:

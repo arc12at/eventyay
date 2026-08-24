@@ -8,6 +8,7 @@ from typing import Set
 
 from django import forms
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Q, QuerySet
 from django.db.models.functions import Concat
@@ -633,10 +634,38 @@ class EventImportView(EventPermissionRequiredMixin, ImportView):
     permission = 'can_manage_bank_transfers'
 
     def get(self, request, *args, **kwargs):
-        return redirect(reverse('control:event.orders.export', kwargs={
+        return redirect(reverse('control:event.orders.import_export', kwargs={
             'event': self.request.event.slug,
             'organizer': self.request.organizer.slug,
         }) + '?tab=banktransfer')
+
+
+def get_event_banktransfer_context(request):
+    view = EventImportView()
+    view.request = request
+    view.kwargs = {'event': request.event.slug, 'organizer': request.organizer.slug}
+    ctx = {
+        'banktransfer_active': True,
+        'job_running': view.job_running,
+        'no_more_payments': False,
+        'filter_form': BankTransactionFilterForm(request.GET or None),
+    }
+    if not request.event.has_subevents and request.event.settings.get('payment_term_last'):
+        if now() > request.event.payment_term_last:
+            ctx['no_more_payments'] = True
+
+    qs = view.get_queryset()
+    page = request.GET.get('page', 1)
+    paginator = Paginator(qs, view.paginate_by)
+    try:
+        page_obj = paginator.page(page)
+    except Exception:
+        page_obj = paginator.page(1)
+
+    ctx['transactions_unhandled'] = page_obj.object_list
+    ctx['page_obj'] = page_obj
+    ctx['is_paginated'] = page_obj.has_other_pages()
+    return ctx
 
 
 class OrganizerImportView(

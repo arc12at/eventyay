@@ -9,41 +9,8 @@
 
 {% block custom_header %}
     {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static 'pretixcontrol/css/orders-mobile.css' %}" />
-    {% if banktransfer_active %}
-        <link rel="stylesheet" type="text/css" href="{% static 'pretixcontrol/css/tickets-mobile.css' %}" />
-        <link rel="stylesheet" type="text/css" href="{% static 'pretixplugins/banktransfer/ui.css' %}" />
-    {% endif %}
-    <script type="text/javascript">
-        $(function () {
-            $('.panel-body form').each(function () {
-                var $form = $(this);
-                var paidOnly = $form.find('input[name$="-paid_only"]');
-                var approvalPendingOnly = $form.find('input[name$="-approval_pending_only"]');
-                var includePaymentAmounts = $form.find('input[name$="-include_payment_amounts"]');
-
-                function updateDisabledState($field, disabled) {
-                    $field.prop('disabled', disabled);
-                    if (disabled) {
-                        $field.prop('checked', false);
-                    }
-                    $field.closest('.form-group, .form-field-boundary').toggleClass('disabled', disabled);
-                }
-
-                function syncOrderExportFilters() {
-                    updateDisabledState(approvalPendingOnly, paidOnly.prop('checked'));
-                    updateDisabledState(paidOnly, approvalPendingOnly.prop('checked'));
-                    updateDisabledState(includePaymentAmounts, approvalPendingOnly.prop('checked'));
-                }
-
-                if (paidOnly.length && approvalPendingOnly.length && includePaymentAmounts.length) {
-                    syncOrderExportFilters();
-                    paidOnly.on('change', syncOrderExportFilters);
-                    approvalPendingOnly.on('change', syncOrderExportFilters);
-                }
-            });
-        });
-    </script>
+    <link rel="stylesheet" type="text/css" href="{% static 'pretixcontrol/css/import-export.css' %}" />
+    <script type="application/javascript" src="{% static 'pretixcontrol/js/ui/import_export.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -55,7 +22,7 @@
     {% endcaptureas %}
     {% include "common/includes/header_nav.html" with header_title=header_title_var header_title_extra=header_extra_var header_component_link="pretixcontrol/event/component_link.html" %}
 
-    <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 20px;">
+    <ul class="nav nav-tabs import-export-nav-tabs" role="tablist">
         <li role="presentation" {% if active_tab == "export" %}class="active"{% endif %}>
             <a href="#tab-export" aria-controls="tab-export" role="tab" data-toggle="tab">{% trans "Export data" %}</a>
         </li>
@@ -71,7 +38,7 @@
         {% endif %}
     </ul>
 
-    <div class="tab-content">
+    <div class="tab-content import-export-tab-content">
         <!-- Export Tab -->
         <div role="tabpanel" class="tab-pane {% if active_tab == "export" %}active{% endif %}" id="tab-export">
             {% for e in exporters %}
@@ -84,7 +51,7 @@
                     </summary>
                     <div id="{{ e.identifier }}">
                         <div class="panel-body">
-                            <form action="{% url "control:event.orders.export.do" event=request.event.slug organizer=request.organizer.slug %}"
+                            <form action="{% url 'control:event.orders.import_export.export_do' event=request.event.slug organizer=request.organizer.slug %}"
                                     method="post" class="form-horizontal" data-asynctask data-asynctask-download
                                     data-asynctask-long>
                                 {% csrf_token %}
@@ -99,7 +66,7 @@
                 </details>
             {% endfor %}
 
-            {% if banktransfer_active %}
+            {% if banktransfer_active and "identifier" not in request.GET and "exporter" not in request.POST %}
                 <details class="panel panel-default">
                     <summary class="panel-heading">
                         <h3 class="panel-title">
@@ -124,12 +91,12 @@
         {% if "can_change_orders" in request.eventpermset %}
         <!-- Import Attendees Tab -->
         <div role="tabpanel" class="tab-pane {% if active_tab == "import" %}active{% endif %}" id="tab-import">
-            <div class="panel panel-default orders-import-panel">
+            <div class="panel panel-default orders-import-panel tickets-import-panel">
                 <div class="panel-heading">
                     <h3 class="panel-title">{% trans "Upload a new file" %}</h3>
                 </div>
                 <div class="panel-body">
-                    <form action="{% url 'control:event.orders.import' event=request.event.slug organizer=request.organizer.slug %}" method="post" enctype="multipart/form-data" class="form-horizontal">
+                    <form action="{% url 'control:event.orders.import' event=request.event.slug organizer=request.organizer.slug %}" method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         <p>
                             {% blocktrans trimmed %}
@@ -137,15 +104,15 @@
                                 meanings of the different columns in the next step.
                             {% endblocktrans %}
                         </p>
-                        <div class="form-group">
-                            <label class="col-md-2 control-label" for="file">{% trans "Import file" %}:</label>
-                            <div class="col-md-5">
-                                <input id="file" type="file" name="file" accept=".csv" required data-eventyay-file-wrapper="disabled"/>
+                        <div class="import-file-group">
+                            <span class="import-file-label">{% trans "Import file" %} *</span>
+                            <div class="import-file-input-wrapper">
+                                <input id="import-file" type="file" name="file" accept=".csv" required/>
                             </div>
                         </div>
-                        <div class="form-group submit-group">
-                            <button class="btn btn-primary btn-save" type="submit">
-                                <span class="icon icon-upload"></span> {% trans "Upload and continue" %}
+                        <div class="import-submit-group">
+                            <button class="btn btn-primary btn-lg" type="submit">
+                                <i class="fa fa-upload"></i> {% trans "Upload and continue" %}
                             </button>
                         </div>
                     </form>
@@ -170,11 +137,11 @@
                                     On this page, you can import banking data on a per-event level. You also only see
                                     unmatched transactions imported directly for this event.
                                 {% endblocktrans %}
-                                <a href="{% url "plugins:banktransfer:import" organizer=request.organizer.slug %}"
+                                <a href="{% url 'plugins:banktransfer:import' organizer=request.organizer.slug %}"
                                    class="btn btn-default btn-xs">{% trans "Go to organizer-level import" %}</a>
                             </p>
 
-                            <div class="row" style="margin-bottom: 20px;">
+                            <div class="row banktransfer-filter-row">
                                 <form class="form-inline helper-display-inline" action="" method="get">
                                     <input type="hidden" name="tab" value="banktransfer" />
                                     <div class="col-md-3">
@@ -218,19 +185,8 @@
                         </div>
                     </div>
                 {% endif %}
-                <script type="application/javascript" src="{% static "pretixplugins/banktransfer/ui.js" %}"></script>
+                <script type="application/javascript" src="{% static 'pretixplugins/banktransfer/ui.js' %}"></script>
             </div>
         {% endif %}
     </div>
-
-    <script type="text/javascript">
-        $(document).ready(function() {
-            $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-                var target = $(e.target).attr("href");
-                var tabName = target.replace('#tab-', '');
-                var newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?tab=' + tabName;
-                window.history.pushState({path: newUrl}, '', newUrl);
-            });
-        });
-    </script>
 {% endblock %}
