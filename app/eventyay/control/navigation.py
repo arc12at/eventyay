@@ -318,7 +318,13 @@ def get_event_navigation(request: HttpRequest):
         nav.append(
             {
                 'label': _('Orders'),
-                'url': parent_url,
+                'url': reverse(
+                    'control:event.orders.overview',
+                    kwargs={
+                        'event': request.event.slug,
+                        'organizer': request.event.organizer.slug,
+                    },
+                ),
                 'active': False,
                 'icon': 'shopping-cart',
                 'children': children,
