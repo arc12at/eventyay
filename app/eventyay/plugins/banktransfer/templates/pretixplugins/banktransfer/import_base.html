@@ -6,8 +6,12 @@
     <nav id="event-nav" class="header-nav">
         <div class="navigation">
             <div class="navigation-title">
-                <h1>
-                    {% trans "Import bank data" %}
+                <h1 class="header-with-back-btn">
+                    <span>{% trans "Import bank data" %}</span>
+                    <a class="btn btn-default"
+                            href="{% url 'control:event.orders.import_export' event=request.event.slug organizer=request.event.organizer.slug %}?tab=banktransfer">
+                        <i class="fa fa-arrow-left"></i> {% trans "Back to Import / Export" %}
+                    </a>
                     {% if runningimport %}
                         <small>{% trans "Import currently running…" %}</small>
                     {% else %}
