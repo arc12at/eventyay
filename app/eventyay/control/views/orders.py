@@ -2786,20 +2786,20 @@ class ExportMixin:
 
         default_tab = 'export'
         if not can_view_orders:
-            if can_change_orders:
+            if can_change_orders or has_banktransfer:
                 default_tab = 'import'
-            elif has_banktransfer:
-                default_tab = 'banktransfer'
 
         active_tab = self.request.GET.get('tab', default_tab)
         if active_tab == 'export' and not can_view_orders:
             active_tab = default_tab
-        elif active_tab == 'import' and not can_change_orders:
+        elif active_tab == 'import' and not (can_change_orders or has_banktransfer):
             active_tab = default_tab
-        elif active_tab == 'banktransfer' and not has_banktransfer:
-            active_tab = default_tab
+        elif active_tab == 'banktransfer':
+            active_tab = 'import'
 
         ctx['active_tab'] = active_tab
+        ctx['has_banktransfer'] = has_banktransfer
+        ctx['can_change_orders'] = can_change_orders
         return ctx
 
 

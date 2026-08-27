@@ -46,3 +46,44 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    function updateImportTarget(type) {
+        var form = document.getElementById('import-form');
+        var helpAttendees = document.getElementById('import-help-attendees');
+        var helpBanktransfer = document.getElementById('import-help-banktransfer');
+        var fileInput = document.getElementById('import-file');
+        var unresolved = document.getElementById('unresolved-transactions');
+        
+        if (!form) return;
+
+        if (type === 'banktransfer') {
+            var url = form.getAttribute('data-banktransfer-url');
+            if (url && url !== '#') form.action = url;
+            if (helpAttendees) helpAttendees.classList.add('hide');
+            if (helpBanktransfer) helpBanktransfer.classList.remove('hide');
+            if (fileInput) fileInput.removeAttribute('accept');
+            if (unresolved) unresolved.classList.remove('hide');
+        } else {
+            var url = form.getAttribute('data-attendees-url');
+            if (url && url !== '#') form.action = url;
+            if (helpAttendees) helpAttendees.classList.remove('hide');
+            if (helpBanktransfer) helpBanktransfer.classList.add('hide');
+            if (fileInput) fileInput.setAttribute('accept', '.csv');
+            if (unresolved) unresolved.classList.add('hide');
+        }
+    }
+
+    var importTypeSelect = document.getElementById('import-type-select');
+    if (importTypeSelect) {
+        importTypeSelect.addEventListener('change', function() {
+            updateImportTarget(this.value);
+        });
+        updateImportTarget(importTypeSelect.value);
+    } else {
+        var form = document.getElementById('import-form');
+        if (form && form.hasAttribute('data-default-type')) {
+            updateImportTarget(form.getAttribute('data-default-type'));
+        }
+    }
+});

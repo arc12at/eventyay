@@ -148,3 +148,8 @@ table.transaction-list td.discard {
     width: 100%;
   }
 }
+
+.import-tab-description { margin-bottom: 20px; }
+.import-file-input { margin-top: 7px; }
+.import-submit-panel { margin-top: 20px; }
+.back-button-row { margin-bottom: 15px; }

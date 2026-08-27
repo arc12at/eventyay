@@ -132,14 +132,3 @@
     vertical-align: middle;
   }
 }
-
-.header-with-back-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: nowrap;
-}
-
-.header-with-back-btn a.btn {
-  margin-right: 10px;
-}

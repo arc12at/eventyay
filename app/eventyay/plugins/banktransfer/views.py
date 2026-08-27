@@ -652,7 +652,7 @@ class EventImportView(EventPermissionRequiredMixin, ImportView):
         return redirect(reverse('control:event.orders.import_export', kwargs={
             'event': self.request.event.slug,
             'organizer': self.request.organizer.slug,
-        }) + '?tab=banktransfer')
+        }) + '?tab=import&import_type=banktransfer')
 
 
 def get_event_banktransfer_context(request):
