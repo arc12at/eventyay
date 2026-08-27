@@ -122,6 +122,8 @@ class MailForm(ScheduledAtValidationMixin, forms.Form):
 
     def clean(self):
         d = super().clean()
+        if self.draft_save:
+            return d
         if d.get('subevent') and (d.get('subevents_from') or d.get('subevents_to')):
             raise ValidationError(
                 pgettext_lazy(
@@ -149,6 +151,7 @@ class MailForm(ScheduledAtValidationMixin, forms.Form):
 
     def __init__(self, *args, **kwargs):
         event = self.event = kwargs.pop('event')
+        self.draft_save = kwargs.pop('draft_save', False)
         super().__init__(*args, **kwargs)
 
         recp_choices = [('orders', _('Everyone who created a ticket order'))]
@@ -239,6 +242,10 @@ class MailForm(ScheduledAtValidationMixin, forms.Form):
             del self.fields['subevent']
             del self.fields['subevents_from']
             del self.fields['subevents_to']
+
+        if self.draft_save:
+            for field_name in ('recipients', 'order_status', 'products', 'subject', 'message'):
+                self.fields[field_name].required = False
 
 
 class MailContentSettingsForm(SettingsForm):
@@ -623,6 +630,7 @@ class TeamMailForm(ScheduledAtValidationMixin, forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.event = kwargs.pop('event')
+        self.draft_save = kwargs.pop('draft_save', False)
         super().__init__(*args, **kwargs)
 
         locales = self.event.settings.get('locales') or [self.event.locale or 'en']
@@ -659,3 +667,7 @@ class TeamMailForm(ScheduledAtValidationMixin, forms.Form):
             required=False,
             help_text=_('Leave empty to send immediately. If set, the email will be sent at this time. Time is interpreted in the event timezone.'),
         )
+
+        if self.draft_save:
+            for field_name in ('teams', 'subject', 'message'):
+                self.fields[field_name].required = False

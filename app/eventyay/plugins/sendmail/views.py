@@ -16,6 +16,7 @@ from django.utils.translation import ngettext_lazy
 from django.views.generic import FormView, ListView, TemplateView, UpdateView, View
 
 from eventyay.base.i18n import language
+from i18nfield.strings import LazyI18nString
 from eventyay.base.meetup import is_meetup_event
 from eventyay.base.models.base import CachedFile
 from eventyay.base.models.event import Event
@@ -64,6 +65,7 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['event'] = self.request.event
+        kwargs['draft_save'] = self.request.POST.get('action') == 'draft'
         self.load_copy_draft(self.request, kwargs)
 
         if self.request.method == 'POST' and self.request.POST.get('action') == 'draft':
@@ -83,21 +85,33 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
         return super().form_invalid(form)
 
     def form_valid(self, form):
+        is_draft = self.request.POST.get('action') == 'draft'
+
+        if is_draft:
+            if not form.cleaned_data.get('subject'):
+                form.cleaned_data['subject'] = LazyI18nString({'en': str(_('Untitled draft'))})
+            if not form.cleaned_data.get('message'):
+                form.cleaned_data['message'] = LazyI18nString({'en': ''})
+            if not form.cleaned_data.get('products'):
+                form.cleaned_data['products'] = []
+
         qs = Order.objects.filter(event=self.request.event)
-        statusq = Q(status__in=form.cleaned_data['order_status'])
-        if 'overdue' in form.cleaned_data['order_status']:
+        order_statuses = form.cleaned_data.get('order_status') or []
+        statusq = Q(status__in=order_statuses)
+        if 'overdue' in order_statuses:
             statusq |= Q(status=Order.STATUS_PENDING, expires__lt=now())
-        if 'pa' in form.cleaned_data['order_status']:
+        if 'pa' in order_statuses:
             statusq |= Q(status=Order.STATUS_PENDING, require_approval=True)
-        if 'na' in form.cleaned_data['order_status']:
+        if 'na' in order_statuses:
             statusq |= Q(status=Order.STATUS_PENDING, require_approval=False)
         orders = qs.filter(statusq)
 
         opq = OrderPosition.objects.filter(
             order=OuterRef('pk'),
             canceled=False,
-            product_id__in=[p.pk for p in form.cleaned_data.get('products')],
         )
+        if form.cleaned_data.get('products'):
+            opq = opq.filter(product_id__in=[p.pk for p in form.cleaned_data.get('products')])
 
         if form.cleaned_data.get('has_filter_checkins'):
             ql = []
@@ -135,8 +149,6 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
 
         orders = orders.annotate(match_pos=Exists(opq)).filter(match_pos=True).distinct()
 
-        is_draft = self.request.POST.get('action') == 'draft'
-
         if not orders and not is_draft:
             messages.error(self.request, _('There are no orders matching this selection.'))
             return self.get(self.request, *self.args, **self.kwargs)
@@ -164,37 +176,84 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
             return self.get(self.request, *self.args, **self.kwargs)
 
         scheduled_at = form.cleaned_data.get('scheduled_at')
-        qm = EmailQueue.objects.create(
-            event=self.request.event,
-            user=self.request.user,
-            subject=form.cleaned_data['subject'].data,
-            message=form.cleaned_data['message'].data,
-            attachments=[form.cleaned_data['attachment'].id] if form.cleaned_data.get('attachment') else [],
-            locale=self.request.event.settings.locale,
-            reply_to=self._get_reply_to_for_bulk_email() or '',
-            bcc=self.request.event.settings.get('mail_bcc'),
-            composing_for=ComposingFor.ATTENDEES,
-            scheduled_at=scheduled_at if not is_draft else None,
-            is_draft=is_draft,
-        )
+        draft_id = self.request.POST.get('draft_id') or getattr(self, 'draft_id', None)
 
-        EmailQueueFilter.objects.create(
-            mail=qm,
-            recipients=form.cleaned_data.get('recipients', 'orders'),
-            order_status=form.cleaned_data.get('order_status', []),
-            orders=list(orders.values_list('pk', flat=True)),
-            products=[i.pk for i in form.cleaned_data.get('products', [])],
-            checkin_lists=[cl.pk for cl in form.cleaned_data.get('checkin_lists', [])],
-            has_filter_checkins=form.cleaned_data.get('has_filter_checkins', False),
-            not_checked_in=form.cleaned_data.get('not_checked_in', False),
-            subevent=form.cleaned_data.get('subevent').pk if form.cleaned_data.get('subevent') else None,
-            subevents_from=form.cleaned_data.get('subevents_from'),
-            subevents_to=form.cleaned_data.get('subevents_to'),
-            order_created_from=form.cleaned_data.get('order_created_from'),
-            order_created_to=form.cleaned_data.get('order_created_to'),
-        )
+        qm = None
+        if draft_id:
+            qm = EmailQueue.objects.filter(
+                pk=draft_id,
+                event=self.request.event,
+                composing_for=ComposingFor.ATTENDEES,
+                is_draft=True,
+            ).first()
+
+        subject_val = form.cleaned_data['subject'].data if hasattr(form.cleaned_data['subject'], 'data') else form.cleaned_data['subject']
+        message_val = form.cleaned_data['message'].data if hasattr(form.cleaned_data['message'], 'data') else form.cleaned_data['message']
+        attachment = form.cleaned_data.get('attachment')
+        attachment_ids = [] if is_draft or not attachment else [attachment.id]
+
+        if qm:
+            qm.subject = subject_val
+            qm.message = message_val
+            qm.attachments = attachment_ids
+            qm.reply_to = self._get_reply_to_for_bulk_email() or ''
+            qm.bcc = self.request.event.settings.get('mail_bcc')
+            qm.scheduled_at = scheduled_at
+            qm.is_draft = is_draft
+            qm.save()
+
+            qmf, created = EmailQueueFilter.objects.get_or_create(mail=qm)
+            qmf.recipients = form.cleaned_data.get('recipients', 'orders')
+            qmf.order_status = form.cleaned_data.get('order_status', [])
+            qmf.orders = list(orders.values_list('pk', flat=True))
+            qmf.products = [i.pk for i in form.cleaned_data.get('products', [])]
+            qmf.checkin_lists = [cl.pk for cl in form.cleaned_data.get('checkin_lists', [])]
+            qmf.has_filter_checkins = form.cleaned_data.get('has_filter_checkins', False)
+            qmf.not_checked_in = form.cleaned_data.get('not_checked_in', False)
+            qmf.subevent = form.cleaned_data.get('subevent').pk if form.cleaned_data.get('subevent') else None
+            qmf.subevents_from = form.cleaned_data.get('subevents_from')
+            qmf.subevents_to = form.cleaned_data.get('subevents_to')
+            qmf.order_created_from = form.cleaned_data.get('order_created_from')
+            qmf.order_created_to = form.cleaned_data.get('order_created_to')
+            qmf.save()
+        else:
+            qm = EmailQueue.objects.create(
+                event=self.request.event,
+                user=self.request.user,
+                subject=subject_val,
+                message=message_val,
+                attachments=attachment_ids,
+                locale=self.request.event.settings.locale,
+                reply_to=self._get_reply_to_for_bulk_email() or '',
+                bcc=self.request.event.settings.get('mail_bcc'),
+                composing_for=ComposingFor.ATTENDEES,
+                scheduled_at=scheduled_at,
+                is_draft=is_draft,
+            )
+
+            EmailQueueFilter.objects.create(
+                mail=qm,
+                recipients=form.cleaned_data.get('recipients', 'orders'),
+                order_status=form.cleaned_data.get('order_status', []),
+                orders=list(orders.values_list('pk', flat=True)),
+                products=[i.pk for i in form.cleaned_data.get('products', [])],
+                checkin_lists=[cl.pk for cl in form.cleaned_data.get('checkin_lists', [])],
+                has_filter_checkins=form.cleaned_data.get('has_filter_checkins', False),
+                not_checked_in=form.cleaned_data.get('not_checked_in', False),
+                subevent=form.cleaned_data.get('subevent').pk if form.cleaned_data.get('subevent') else None,
+                subevents_from=form.cleaned_data.get('subevents_from'),
+                subevents_to=form.cleaned_data.get('subevents_to'),
+                order_created_from=form.cleaned_data.get('order_created_from'),
+                order_created_to=form.cleaned_data.get('order_created_to'),
+            )
 
         qm.populate_to_users()
+
+        if is_draft and form.cleaned_data.get('attachment'):
+            messages.info(
+                self.request,
+                _('Attachments are not saved in drafts. Please reattach files before sending.')
+            )
 
         if is_draft:
             messages.success(self.request, _('The draft has been saved.'))
@@ -233,6 +292,9 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
     def get_context_data(self, *args, **kwargs):
         ctx = super().get_context_data(*args, **kwargs)
         ctx['output'] = getattr(self, 'output', None)
+        ctx['draft_id'] = getattr(self, 'draft_id', self.request.POST.get('draft_id', None))
+        ctx['recipient_count'] = getattr(self, 'recipient_count', 0)
+        ctx['is_draft'] = bool(ctx['draft_id'])
         return ctx
 
 
@@ -330,6 +392,8 @@ class OutboxListView(EventPermissionRequiredMixin, QueryFilterOrderingMixin, Lis
 
 
 class DraftsListView(OutboxListView):
+    template_name = 'pretixplugins/sendmail/draft_list.html'
+
     def get_queryset(self):
         first_recipient_email = EmailQueueToUser.objects.filter(
             mail=OuterRef('pk')
@@ -351,7 +415,33 @@ class DraftsListView(OutboxListView):
             sent_at__isnull=True, is_draft=True
         ).count()
         ctx['is_drafts'] = True
+        ctx['headers'] = [
+            ('subject', _('Subject')),
+            ('type', _('Email type')),
+            ('recipient', _('Recipients')),
+            ('scheduled', _('Scheduled for')),
+            ('created', _('Last modified')),
+        ]
         return ctx
+
+
+class DuplicateDraftView(EventPermissionRequiredMixin, View):
+    permission_required = 'can_change_orders'
+
+    def post(self, request, *args, **kwargs):
+        mail = get_object_or_404(
+            EmailQueue,
+            event=request.event,
+            pk=kwargs['pk'],
+            is_draft=True,
+        )
+        mail.duplicate()
+        messages.success(request, _('The draft has been duplicated.'))
+        return redirect(
+            'control:event.mail.drafts',
+            event=request.event.slug,
+            organizer=request.event.organizer.slug,
+        )
 
 class SendEmailQueueView(EventPermissionRequiredMixin, View):
     permission_required = 'can_change_orders'
@@ -389,6 +479,12 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
         return get_object_or_404(
             EmailQueue, event=self.request.event, pk=self.kwargs["pk"]
         )
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if obj.is_draft and hasattr(obj, 'filters_data') and request.method == 'GET':
+            return redirect(obj.get_edit_url())
+        return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -514,10 +610,13 @@ class DeleteEmailQueueView(EventPermissionRequiredMixin, TemplateView):
         )
 
     def question(self):
+        if self.mail.is_draft:
+            return _('Do you really want to delete this draft?')
         return _('Do you really want to delete this mail?')
 
     def post(self, request, *args, **kwargs):
         mail = self.mail
+        is_draft = mail.is_draft
         if mail.sent_at:
             messages.error(
                 request,
@@ -528,11 +627,22 @@ class DeleteEmailQueueView(EventPermissionRequiredMixin, TemplateView):
             EmailQueueToUser.objects.filter(mail=mail).delete()
             mail.delete()
 
-            messages.success(
-                request,
-                _("The mail and its related data have been deleted.")
-            )
+            if is_draft:
+                messages.success(
+                    request,
+                    _("The draft has been deleted.")
+                )
+            else:
+                messages.success(
+                    request,
+                    _("The mail and its related data have been deleted.")
+                )
 
+        if is_draft:
+            return redirect(reverse('control:event.mail.drafts', kwargs={
+                'organizer': request.event.organizer.slug,
+                'event': request.event.slug
+            }))
         return redirect(reverse('control:event.mail.outbox', kwargs={
             'organizer': request.event.organizer.slug,
             'event': request.event.slug
@@ -547,7 +657,7 @@ class PurgeEmailQueuesView(EventPermissionRequiredMixin, TemplateView):
         return self.request.event
 
     def question(self):
-        count = EmailQueue.objects.filter(event=self.request.event, sent_at__isnull=True).count()
+        count = EmailQueue.objects.filter(event=self.request.event, sent_at__isnull=True, is_draft=False).count()
         return ngettext_lazy(
             "Do you really want to purge the mail?",
             "Do you really want to purge {count} mails?",
@@ -555,7 +665,7 @@ class PurgeEmailQueuesView(EventPermissionRequiredMixin, TemplateView):
         ).format(count=count)
 
     def post(self, request, *args, **kwargs):
-        mails = EmailQueue.objects.filter(event=request.event, sent_at__isnull=True)
+        mails = EmailQueue.objects.filter(event=request.event, sent_at__isnull=True, is_draft=False)
 
         EmailQueueFilter.objects.filter(mail__in=mails).delete()
         EmailQueueToUser.objects.filter(mail__in=mails).delete()
@@ -575,6 +685,45 @@ class PurgeEmailQueuesView(EventPermissionRequiredMixin, TemplateView):
             'organizer': request.event.organizer.slug,
             'event': request.event.slug
         }))
+
+
+class PurgeDraftsView(EventPermissionRequiredMixin, TemplateView):
+    permission_required = 'can_change_orders'
+    template_name = 'pretixplugins/sendmail/purge_confirmation.html'
+
+    def get_permission_object(self):
+        return self.request.event
+
+    def question(self):
+        count = EmailQueue.objects.filter(event=self.request.event, sent_at__isnull=True, is_draft=True).count()
+        return ngettext_lazy(
+            "Do you really want to discard the draft?",
+            "Do you really want to discard {count} drafts?",
+            count
+        ).format(count=count)
+
+    def post(self, request, *args, **kwargs):
+        mails = EmailQueue.objects.filter(event=request.event, sent_at__isnull=True, is_draft=True)
+
+        EmailQueueFilter.objects.filter(mail__in=mails).delete()
+        EmailQueueToUser.objects.filter(mail__in=mails).delete()
+        count = mails.count()
+        mails.delete()
+
+        messages.success(
+            request,
+            ngettext_lazy(
+                "One draft has been discarded.",
+                "{count} drafts have been discarded.",
+                count
+            ).format(count=count)
+        )
+
+        return redirect(reverse('control:event.mail.drafts', kwargs={
+            'organizer': request.event.organizer.slug,
+            'event': request.event.slug
+        }))
+
 
 
 class SentMailView(EventPermissionRequiredMixin, QueryFilterOrderingMixin, ListView):
@@ -629,6 +778,7 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['event'] = self.request.event
+        kwargs['draft_save'] = self.request.POST.get('action') == 'draft'
         self.load_copy_draft(self.request, kwargs, team_mode=True)
 
         if self.request.method == 'POST' and self.request.POST.get('action') == 'draft':
@@ -646,7 +796,9 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['output'] = getattr(self, 'output', None)
-
+        ctx['draft_id'] = getattr(self, 'draft_id', self.request.POST.get('draft_id', None))
+        ctx['recipient_count'] = getattr(self, 'recipient_count', 0)
+        ctx['is_draft'] = bool(ctx['draft_id'])
         return ctx
 
     def form_invalid(self, form):
@@ -654,6 +806,16 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
         return super().form_invalid(form)
 
     def form_valid(self, form):
+        is_draft = self.request.POST.get('action') == 'draft'
+
+        if is_draft:
+            if not form.cleaned_data.get('subject'):
+                form.cleaned_data['subject'] = LazyI18nString({'en': str(_('Untitled draft'))})
+            if not form.cleaned_data.get('message'):
+                form.cleaned_data['message'] = LazyI18nString({'en': ''})
+            if not form.cleaned_data.get('teams'):
+                form.cleaned_data['teams'] = []
+
         event = self.request.event
         user = self.request.user
         subject = form.cleaned_data['subject']
@@ -693,7 +855,7 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
 
         sent_emails = set()
         recipients_list = []
-        for team in form.cleaned_data['teams']:
+        for team in form.cleaned_data.get('teams', []):
             for member in team.members.all():
                 if not member.email or member.email in sent_emails:
                     continue
@@ -709,46 +871,72 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
 
                 sent_emails.add(member.email)
 
-        is_draft = self.request.POST.get('action') == 'draft'
-
         if not recipients_list and not is_draft:
             messages.error(self.request, _('There are no valid recipients for the selected teams.'))
             return self.form_invalid(form)
 
-        # Create the EmailQueue instance
         scheduled_at = form.cleaned_data.get('scheduled_at')
-        mail_instance = EmailQueue.objects.create(
-            event=event,
-            user=user,
-            composing_for=ComposingFor.TEAMS,
-            subject=subject.data,
-            message=message.data,
-            locale=event.settings.locale,
-            reply_to=self._get_reply_to_for_bulk_email() or '',
-            bcc=event.settings.get('mail_bcc'),
-            attachments=[form.cleaned_data['attachment'].id] if form.cleaned_data.get('attachment') else [],
-            scheduled_at=scheduled_at if not is_draft else None,
-            is_draft=is_draft,
-        )
+        draft_id = self.request.POST.get('draft_id') or getattr(self, 'draft_id', None)
 
-        # Create associated filter data for teams
-        EmailQueueFilter.objects.create(
-            mail=mail_instance,
-            order_status=[],
-            products=[],
-            checkin_lists=[],
-            has_filter_checkins=False,
-            not_checked_in=False,
-            subevent=None,
-            subevents_from=None,
-            subevents_to=None,
-            order_created_from=None,
-            order_created_to=None,
-            orders=[],
-            teams=[team.pk for team in form.cleaned_data['teams']],
-        )
+        mail_instance = None
+        if draft_id:
+            mail_instance = EmailQueue.objects.filter(
+                pk=draft_id,
+                event=event,
+                composing_for=ComposingFor.TEAMS,
+                is_draft=True,
+            ).first()
 
-        # Create recipient entries for each team member
+        subject_val = subject.data if hasattr(subject, 'data') else subject
+        message_val = message.data if hasattr(message, 'data') else message
+        attachment = form.cleaned_data.get('attachment')
+        attachment_ids = [] if is_draft or not attachment else [attachment.id]
+
+        if mail_instance:
+            mail_instance.subject = subject_val
+            mail_instance.message = message_val
+            mail_instance.attachments = attachment_ids
+            mail_instance.reply_to = self._get_reply_to_for_bulk_email() or ''
+            mail_instance.bcc = event.settings.get('mail_bcc')
+            mail_instance.scheduled_at = scheduled_at
+            mail_instance.is_draft = is_draft
+            mail_instance.save()
+
+            qmf, created = EmailQueueFilter.objects.get_or_create(mail=mail_instance)
+            qmf.teams = [team.pk for team in form.cleaned_data.get('teams', [])]
+            qmf.save()
+        else:
+            mail_instance = EmailQueue.objects.create(
+                event=event,
+                user=user,
+                composing_for=ComposingFor.TEAMS,
+                subject=subject_val,
+                message=message_val,
+                locale=event.settings.locale,
+                reply_to=self._get_reply_to_for_bulk_email() or '',
+                bcc=event.settings.get('mail_bcc'),
+                attachments=attachment_ids,
+                scheduled_at=scheduled_at,
+                is_draft=is_draft,
+            )
+
+            EmailQueueFilter.objects.create(
+                mail=mail_instance,
+                order_status=[],
+                products=[],
+                checkin_lists=[],
+                has_filter_checkins=False,
+                not_checked_in=False,
+                subevent=None,
+                subevents_from=None,
+                subevents_to=None,
+                order_created_from=None,
+                order_created_to=None,
+                orders=[],
+                teams=[team.pk for team in form.cleaned_data.get('teams', [])],
+            )
+
+        mail_instance.recipients.all().delete()
         recipient_objs = [
             EmailQueueToUser(
                 mail=mail_instance,
@@ -759,7 +947,14 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
             )
             for rec in recipients_list
         ]
-        EmailQueueToUser.objects.bulk_create(recipient_objs)
+        if recipient_objs:
+            EmailQueueToUser.objects.bulk_create(recipient_objs)
+
+        if is_draft and form.cleaned_data.get('attachment'):
+            messages.info(
+                self.request,
+                _('Attachments are not saved in drafts. Please reattach files before sending.')
+            )
 
         if is_draft:
             messages.success(self.request, _('The draft has been saved.'))
