@@ -68,6 +68,17 @@ def control_nav_import(sender, request=None, **kwargs):
                     ),
                 },
                 {
+                    'label': _('Drafts'),
+                    'url': reverse(
+                        'control:event.mail.drafts',
+                        kwargs={
+                            'event': request.event.slug,
+                            'organizer': request.event.organizer.slug,
+                        },
+                    ),
+                    'active': (url.url_name == 'event.mail.drafts'),
+                },
+                {
                     'label': _('Sent'),
                     'url': reverse(
                         'control:event.mail.sent',

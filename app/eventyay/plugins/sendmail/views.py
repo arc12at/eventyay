@@ -65,6 +65,17 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
         kwargs = super().get_form_kwargs()
         kwargs['event'] = self.request.event
         self.load_copy_draft(self.request, kwargs)
+
+        if self.request.method == 'POST' and self.request.POST.get('action') == 'draft':
+            data = kwargs.get('data')
+            if data is not None:
+                data = data.copy()
+                if not any(v.strip() for k, v in data.items() if k.startswith('subject_')):
+                    data['subject_0'] = _('Untitled draft')
+                if not any(v.strip() for k, v in data.items() if k.startswith('message_')):
+                    data['message_0'] = ' '
+                kwargs['data'] = data
+
         return kwargs
 
     def form_invalid(self, form):
@@ -124,7 +135,9 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
 
         orders = orders.annotate(match_pos=Exists(opq)).filter(match_pos=True).distinct()
 
-        if not orders:
+        is_draft = self.request.POST.get('action') == 'draft'
+
+        if not orders and not is_draft:
             messages.error(self.request, _('There are no orders matching this selection.'))
             return self.get(self.request, *self.args, **self.kwargs)
 
@@ -161,18 +174,19 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
             reply_to=self._get_reply_to_for_bulk_email() or '',
             bcc=self.request.event.settings.get('mail_bcc'),
             composing_for=ComposingFor.ATTENDEES,
-            scheduled_at=scheduled_at,
+            scheduled_at=scheduled_at if not is_draft else None,
+            is_draft=is_draft,
         )
 
         EmailQueueFilter.objects.create(
             mail=qm,
-            recipients=form.cleaned_data['recipients'],
-            order_status=form.cleaned_data['order_status'],
+            recipients=form.cleaned_data.get('recipients', 'orders'),
+            order_status=form.cleaned_data.get('order_status', []),
             orders=list(orders.values_list('pk', flat=True)),
-            products=[i.pk for i in form.cleaned_data.get('products')],
-            checkin_lists=[cl.pk for cl in form.cleaned_data.get('checkin_lists')],
-            has_filter_checkins=form.cleaned_data.get('has_filter_checkins'),
-            not_checked_in=form.cleaned_data.get('not_checked_in'),
+            products=[i.pk for i in form.cleaned_data.get('products', [])],
+            checkin_lists=[cl.pk for cl in form.cleaned_data.get('checkin_lists', [])],
+            has_filter_checkins=form.cleaned_data.get('has_filter_checkins', False),
+            not_checked_in=form.cleaned_data.get('not_checked_in', False),
             subevent=form.cleaned_data.get('subevent').pk if form.cleaned_data.get('subevent') else None,
             subevents_from=form.cleaned_data.get('subevents_from'),
             subevents_to=form.cleaned_data.get('subevents_to'),
@@ -181,6 +195,14 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
         )
 
         qm.populate_to_users()
+
+        if is_draft:
+            messages.success(self.request, _('The draft has been saved.'))
+            return redirect(
+                'control:event.mail.drafts',
+                event=self.request.event.slug,
+                organizer=self.request.event.organizer.slug,
+            )
 
         if scheduled_at:
             send_queued_mail.apply_async(args=[self.request.event.pk, qm.pk], eta=scheduled_at)
@@ -199,11 +221,11 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
         else:
             messages.success(
                 self.request,
-                _('Your email has been sent to the outbox.')
+                _('Your email has been added to the outbox.')
             )
 
         return redirect(
-            'control:event.mail.send',
+            'control:event.mail.outbox',
             event=self.request.event.slug,
             organizer=self.request.event.organizer.slug,
         )
@@ -298,13 +320,38 @@ class OutboxListView(EventPermissionRequiredMixin, QueryFilterOrderingMixin, Lis
 
         base_qs = self.model.objects.filter(
             event=self.request.event,
-            sent_at__isnull=True
+            sent_at__isnull=True,
+            is_draft=False
         ).select_related('event', 'user').prefetch_related('recipients').annotate(
             first_recipient_email=Subquery(first_recipient_email)
         )
 
         return self.get_filtered_queryset(base_qs)
 
+
+class DraftsListView(OutboxListView):
+    def get_queryset(self):
+        first_recipient_email = EmailQueueToUser.objects.filter(
+            mail=OuterRef('pk')
+        ).order_by('id').values('email')[:1]
+
+        base_qs = self.model.objects.filter(
+            event=self.request.event,
+            sent_at__isnull=True,
+            is_draft=True
+        ).select_related('event', 'user').prefetch_related('recipients').annotate(
+            first_recipient_email=Subquery(first_recipient_email)
+        )
+
+        return self.get_filtered_queryset(base_qs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['pending_mail_count'] = self.request.event.email_queue.filter(
+            sent_at__isnull=True, is_draft=True
+        ).count()
+        ctx['is_drafts'] = True
+        return ctx
 
 class SendEmailQueueView(EventPermissionRequiredMixin, View):
     permission_required = 'can_change_orders'
@@ -347,6 +394,17 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
         kwargs = super().get_form_kwargs()
         kwargs['event'] = self.request.event
         kwargs['read_only'] = bool(self.object.sent_at)
+
+        if self.request.method == 'POST' and self.request.POST.get('action') == 'draft':
+            data = kwargs.get('data')
+            if data is not None:
+                data = data.copy()
+                if not any(v.strip() for k, v in data.items() if k.startswith('subject_')):
+                    data['subject_0'] = _('Untitled draft')
+                if not any(v.strip() for k, v in data.items() if k.startswith('message_')):
+                    data['message_0'] = ' '
+                kwargs['data'] = data
+
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -413,7 +471,28 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
 
             return self.get(self.request, *self.args, **self.kwargs)
 
+        if self.request.POST.get('action') == 'draft':
+            form.instance.is_draft = True
+        else:
+            form.instance.is_draft = False
+
         response = super().form_valid(form)
+        
+        if form.instance.is_draft:
+            messages.success(self.request, _('The draft has been updated.'))
+            return redirect(
+                'control:event.mail.drafts',
+                event=self.request.event.slug,
+                organizer=self.request.event.organizer.slug,
+            )
+
+        if form.instance.scheduled_at:
+            from eventyay.plugins.sendmail.tasks import send_queued_mail
+            send_queued_mail.apply_async(
+                args=[self.request.event.pk, form.instance.pk],
+                eta=form.instance.scheduled_at
+            )
+
         messages.success(self.request, _('Your changes have been saved.'))
         return response
 
@@ -551,6 +630,17 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
         kwargs = super().get_form_kwargs()
         kwargs['event'] = self.request.event
         self.load_copy_draft(self.request, kwargs, team_mode=True)
+
+        if self.request.method == 'POST' and self.request.POST.get('action') == 'draft':
+            data = kwargs.get('data')
+            if data is not None:
+                data = data.copy()
+                if not any(v.strip() for k, v in data.items() if k.startswith('subject_')):
+                    data['subject_0'] = _('Untitled draft')
+                if not any(v.strip() for k, v in data.items() if k.startswith('message_')):
+                    data['message_0'] = ' '
+                kwargs['data'] = data
+
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -619,7 +709,9 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
 
                 sent_emails.add(member.email)
 
-        if not recipients_list:
+        is_draft = self.request.POST.get('action') == 'draft'
+
+        if not recipients_list and not is_draft:
             messages.error(self.request, _('There are no valid recipients for the selected teams.'))
             return self.form_invalid(form)
 
@@ -635,7 +727,8 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
             reply_to=self._get_reply_to_for_bulk_email() or '',
             bcc=event.settings.get('mail_bcc'),
             attachments=[form.cleaned_data['attachment'].id] if form.cleaned_data.get('attachment') else [],
-            scheduled_at=scheduled_at,
+            scheduled_at=scheduled_at if not is_draft else None,
+            is_draft=is_draft,
         )
 
         # Create associated filter data for teams
@@ -668,6 +761,14 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
         ]
         EmailQueueToUser.objects.bulk_create(recipient_objs)
 
+        if is_draft:
+            messages.success(self.request, _('The draft has been saved.'))
+            return redirect(
+                'control:event.mail.drafts',
+                event=event.slug,
+                organizer=event.organizer.slug,
+            )
+
         if scheduled_at:
             send_queued_mail.apply_async(args=[event.pk, mail_instance.pk], eta=scheduled_at)
             event.log_action(
@@ -678,17 +779,18 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
             messages.success(
                 self.request,
                 _('Your email has been scheduled for {datetime} ({timezone}).').format(
-                    datetime=format_scheduled_datetime(self.request.event, scheduled_at),
-                    timezone=self.request.event.timezone,
+                    datetime=format_scheduled_datetime(event, scheduled_at),
+                    timezone=event.timezone,
                 )
             )
         else:
             messages.success(
                 self.request,
-                _('Your email has been sent to the outbox.')
+                _('Your email has been added to the outbox.')
             )
 
-        return redirect(reverse('control:event.mail.compose_teams', kwargs={
-            'organizer': event.organizer.slug,
-            'event': event.slug
-        }))
+        return redirect(
+            'control:event.mail.outbox',
+            event=event.slug,
+            organizer=event.organizer.slug,
+        )

@@ -92,6 +92,11 @@ class EmailQueue(models.Model):
         db_index=True,
         help_text=_('If set, the email will be sent at this time instead of immediately.'),
     )
+    is_draft = models.BooleanField(
+        default=False,
+        verbose_name=_('Draft'),
+        help_text=_('Drafts are kept out of the outbox and are never sent until they are moved there.')
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -120,6 +125,9 @@ class EmailQueue(models.Model):
         """
         if self.sent_at:
             return False  # Already sent
+
+        if self.is_draft:
+            return False  # Do not send drafts
 
         if self.scheduled_at and self.scheduled_at > now():
             raise SendMailException(_('This email is scheduled for the future and cannot be sent yet.'))
