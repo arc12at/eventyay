@@ -13,7 +13,11 @@ def control_nav_import(sender, request=None, **kwargs):
     url = resolve(request.path_info)
     if not request.user.has_event_permission(request.organizer, request.event, 'can_change_orders', request=request):
         return []
-    pending_mails = EmailQueue.objects.filter(event=request.event, sent_at__isnull=True).count()
+    pending_mails = EmailQueue.objects.filter(
+        event=request.event,
+        sent_at__isnull=True,
+        is_draft=False,
+    ).count()
 
     return [
         {
