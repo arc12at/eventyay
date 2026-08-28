@@ -61,7 +61,7 @@ def order(item):
 
 @pytest.fixture
 def pos(order, item):
-    return OrderPosition.objects.create(order=order, item=item, price=13)
+    return OrderPosition.objects.create(order=order, product=item, price=13)
 
 
 @pytest.fixture
@@ -100,7 +100,7 @@ def test_sendmail_simple_case(logged_in_client, sendmail_url, event, order, pos)
         {
             'sendto': 'na',
             'recipients': 'orders',
-            'items': pos.item_id,
+            'items': pos.product_id,
             'subject_0': 'Test subject',
             'message_0': 'This is a test file for sending mails.',
         },
@@ -562,3 +562,34 @@ def test_sendmail_attendee_checkin_filter(logged_in_client, sendmail_url, event,
     assert '/order/' not in djmail.outbox[1].body
     to_emails = set(*zip(*[mail.to for mail in djmail.outbox]))
     assert to_emails == {'attendee1@dummy.test', 'attendee2@dummy.test'}
+
+@pytest.mark.django_db
+def test_sendmail_save_draft(logged_in_client, sendmail_url, event, order, pos):
+    from eventyay.plugins.sendmail.models import EmailQueue
+    djmail.outbox = []
+    response = logged_in_client.post(
+        sendmail_url,
+        {
+            'sendto': 'na',
+            'recipients': 'orders',
+            'items': pos.product_id,
+            'subject_0': 'Test draft subject',
+            'message_0': 'This is a test draft message.',
+            'action': 'draft',
+        },
+        follow=True,
+    )
+    assert response.status_code == 200
+    assert 'alert-success' in response.rendered_content
+
+    assert len(djmail.outbox) == 0
+
+    drafts = EmailQueue.objects.filter(event=event, is_draft=True)
+    assert drafts.count() == 1
+    draft = drafts.first()
+    assert draft.subject == 'Test draft subject'
+    assert 'This is a test draft message.' in str(draft.message)
+
+    with scopes_disabled():
+        assert draft.send() is False
+    assert len(djmail.outbox) == 0

@@ -89,9 +89,9 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
 
         if is_draft:
             if not form.cleaned_data.get('subject'):
-                form.cleaned_data['subject'] = LazyI18nString({'en': str(_('Untitled draft'))})
+                form.cleaned_data['subject'] = LazyI18nString({self.request.event.settings.locale or 'en': str(_('Untitled draft'))})
             if not form.cleaned_data.get('message'):
-                form.cleaned_data['message'] = LazyI18nString({'en': ''})
+                form.cleaned_data['message'] = LazyI18nString({self.request.event.settings.locale or 'en': ''})
             if not form.cleaned_data.get('products'):
                 form.cleaned_data['products'] = []
 
@@ -583,10 +583,9 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
             )
 
         if form.instance.scheduled_at:
-            from eventyay.plugins.sendmail.tasks import send_queued_mail
             send_queued_mail.apply_async(
                 args=[self.request.event.pk, form.instance.pk],
-                eta=form.instance.scheduled_at
+                eta=form.instance.scheduled_at,
             )
 
         messages.success(self.request, _('Your changes have been saved.'))
@@ -810,9 +809,9 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
 
         if is_draft:
             if not form.cleaned_data.get('subject'):
-                form.cleaned_data['subject'] = LazyI18nString({'en': str(_('Untitled draft'))})
+                form.cleaned_data['subject'] = LazyI18nString({self.request.event.settings.locale or 'en': str(_('Untitled draft'))})
             if not form.cleaned_data.get('message'):
-                form.cleaned_data['message'] = LazyI18nString({'en': ''})
+                form.cleaned_data['message'] = LazyI18nString({self.request.event.settings.locale or 'en': ''})
             if not form.cleaned_data.get('teams'):
                 form.cleaned_data['teams'] = []
 

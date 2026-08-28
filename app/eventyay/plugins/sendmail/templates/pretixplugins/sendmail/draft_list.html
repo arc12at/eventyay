@@ -78,7 +78,7 @@
             <span class="label label-default">{{ mail.email_type_display }}</span>
           </td>
           <td class="list-meta">
-            {% blocktranslate count count=mail.recipients.count %}
+            {% blocktranslate count count=mail.recipients.all|length %}
               {{ count }} recipient
             {% plural %}
               {{ count }} recipients

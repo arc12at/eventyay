@@ -87,7 +87,7 @@ def calculate_team_recipient_count(event, qmf):
     if not qmf or not qmf.teams:
         return 0
     sent_emails = set()
-    teams = Team.objects.filter(organizer=event.organizer, pk__in=qmf.teams)
+    teams = Team.objects.filter(organizer=event.organizer, pk__in=qmf.teams).prefetch_related('members')
     for team in teams:
         for member in team.members.all():
             if member.email:
@@ -201,7 +201,7 @@ class CopyDraftMixin:
                         self.recipient_count = calculate_attendee_recipient_count(request.event, qmf)
 
             except (EmailQueue.DoesNotExist, ValueError, TypeError) as e:
-                logger.warning('Failed to load EmailQueue for draft/copyToDraft: %s' % e)
+                logger.warning('Failed to load EmailQueue for draft/copyToDraft: %s', e)
 
 
 class QueryFilterOrderingMixin:
