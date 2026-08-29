@@ -11,7 +11,35 @@
 }
 
 .import-export-nav-tabs {
+  border-bottom: #ccc solid 1px;
   margin-bottom: 20px;
+}
+
+.import-export-nav-tabs > li {
+  margin-bottom: -1px;
+}
+
+.import-export-nav-tabs > li > a {
+  border: none !important;
+  color: #337ab7;
+  padding: 0.5rem 1rem;
+  margin-right: 0;
+  font-weight: normal;
+}
+
+.import-export-nav-tabs > li > a:hover,
+.import-export-nav-tabs > li > a:focus {
+  background: transparent;
+  border-bottom: #337ab7 solid 2px !important;
+}
+
+.import-export-nav-tabs > li.active > a,
+.import-export-nav-tabs > li.active > a:hover,
+.import-export-nav-tabs > li.active > a:focus {
+  border: none !important;
+  border-bottom: #337ab7 solid 4px !important;
+  color: #333;
+  background: transparent;
 }
 
 .banktransfer-filter-row {
@@ -94,16 +122,20 @@
   width: 50%;
 }
 
+.submit-group.panel,
 .import-submit-group,
 .banktransfer-submit-group {
   background-color: #fff;
   border: 1px solid #e3e3e3;
   border-radius: 4px;
   padding: 15px;
-  text-align: right;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 20px;
 }
 
+.submit-group.panel .btn,
 .import-submit-group .btn,
 .banktransfer-submit-group .btn {
   width: auto;
@@ -138,11 +170,14 @@ table.transaction-list td.discard {
     width: 100%;
   }
 
+  .submit-group.panel,
   .import-submit-group,
   .banktransfer-submit-group {
     text-align: center;
+    flex-direction: column;
   }
 
+  .submit-group.panel .btn,
   .import-submit-group .btn,
   .banktransfer-submit-group .btn {
     width: 100%;

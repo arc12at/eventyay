@@ -106,9 +106,9 @@
                 <input type="hidden" name="tab" value="import" />
 
                 {% if can_change_orders and has_banktransfer %}
-                <div class="form-group">
-                    <label class="col-md-2 control-label" for="import-type-select">{% trans "Import target" %}</label>
-                    <div class="col-md-5">
+                <div class="import-file-group">
+                    <label class="import-file-label" style="min-width: 120px;" for="import-type-select">{% trans "Import target" %}</label>
+                    <div class="import-file-input-wrapper">
                         <select id="import-type-select" name="import_type" class="form-control" >
                             <option value="attendees" {% if not request.GET.import_type or request.GET.import_type == 'attendees' %}selected{% endif %}>{% trans "Attendees" %}</option>
                             <option value="banktransfer" {% if request.GET.import_type == 'banktransfer' %}selected{% endif %}>{% trans "Bank Transfers" %}</option>
@@ -117,9 +117,9 @@
                 </div>
                 {% endif %}
 
-                <div class="form-group">
-                    <label class="col-md-2 control-label" for="import-file">{% trans "Import file" %} *</label>
-                    <div class="col-md-5">
+                <div class="import-file-group">
+                    <label class="import-file-label" style="min-width: 120px;" for="import-file">{% trans "Import file" %} *</label>
+                    <div class="import-file-input-wrapper">
                         <input id="import-file" type="file" name="file" required class="import-file-input"/>
                         <p id="import-help-attendees" class="help-block {% if request.GET.import_type == 'banktransfer' %}hide{% endif %}">
                             {% trans "The uploaded file should be a CSV file with a header row." %}
@@ -130,12 +130,13 @@
                     </div>
                 </div>
 
-                <div class="panel panel-default import-submit-panel">
-                    <div class="panel-body text-right">
+                <div class="submit-group panel">
+                    <span></span>
+                    <span>
                         <button class="btn btn-primary btn-lg" type="submit">
                             <i class="fa fa-upload"></i> {% trans "Upload and continue" %}
                         </button>
-                    </div>
+                    </span>
                 </div>
             </form>
 
