@@ -29,6 +29,7 @@ class Recipients(models.TextChoices):
     ORDERS = 'orders', 'Orders'
     ATTENDEES = 'attendees', 'Attendees'
     BOTH = 'both', 'Both'
+    INDIVIDUAL = 'individual', 'Individual'
 
 
 
@@ -158,6 +159,7 @@ class EmailQueue(models.Model):
                 order_created_to=orig_filter.order_created_to,
                 orders=list(orig_filter.orders),
                 teams=list(orig_filter.teams),
+                individual_attendees=list(getattr(orig_filter, 'individual_attendees', []) or []),
             )
 
         recipients = [
@@ -349,8 +351,11 @@ class EmailQueue(models.Model):
         for order in orders_qs:
             order_fallback_needed = False
             attendee_found = False
+            individual_positions = set(filters.individual_attendees) if recipients_mode == "individual" else None
 
             for pos in order.positions.all():
+                if individual_positions is not None and pos.pk not in individual_positions:
+                    continue
                 if pos.attendee_email:
                     attendee_found = True
                     email = pos.attendee_email.strip().lower()
@@ -509,6 +514,7 @@ class EmailQueueFilter(models.Model):
     order_created_to = models.DateTimeField(null=True, blank=True)
     orders = ArrayField(models.IntegerField(), blank=True, default=list)
     teams = ArrayField(models.IntegerField(), blank=True, default=list)
+    individual_attendees = ArrayField(models.IntegerField(), blank=True, default=list)
 
     def __str__(self):
         return f"Filters for mail {self.mail_id}"

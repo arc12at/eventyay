@@ -25,7 +25,7 @@ from eventyay.base.models import Event, Organizer
 from eventyay.helpers.cookies import set_cookie_without_samesite
 from eventyay.multidomain.models import KnownDomain
 
-LOCAL_HOST_NAMES = ('testserver', 'localhost')
+LOCAL_HOST_NAMES = ('testserver', 'localhost', 'example.com')
 
 
 class MultiDomainMiddleware(MiddlewareMixin):

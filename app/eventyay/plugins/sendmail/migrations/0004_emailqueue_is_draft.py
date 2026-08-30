@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sendmail', '0002_emailqueue_scheduled_at'),
+        ('sendmail', '0003_emailqueuefilter_individual_attendees'),
     ]
 
     operations = [

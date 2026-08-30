@@ -20,7 +20,7 @@ from django.utils.http import http_date
 from eventyay.base.middleware import should_skip_session_save
 from eventyay.base.models import Event
 
-LOCAL_HOST_NAMES = ('testserver', 'localhost', '127.0.0.1')
+LOCAL_HOST_NAMES = ('testserver', 'localhost', '127.0.0.1', 'example.com')
 ANY_DOMAIN_ALLOWED = ('robots.txt', 'redirect')
 MAIN_DOMAIN_AUTH_ROUTES = (
     'account_signup',

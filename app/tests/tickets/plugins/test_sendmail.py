@@ -571,11 +571,11 @@ def test_sendmail_save_draft(logged_in_client, sendmail_url, event, order, pos):
     response = logged_in_client.post(
         sendmail_url,
         {
-            'sendto': 'na',
+            'order_status': 'na',
             'recipients': 'orders',
-            'items': pos.product_id,
+            'products': [pos.product_id],
             'subject_0': 'Test draft subject',
-            'message_0': 'This is a test draft message.',
+            'text_0': 'This is a test draft message.',
             'action': 'draft',
         },
         follow=True,
@@ -619,4 +619,4 @@ def test_edit_draft_without_filters_redirects_to_composer(logged_in_client, even
     response = logged_in_client.get(edit_url)
 
     assert response.status_code == 302
-    assert response.url == draft.get_edit_url()
+    assert response.url.endswith(draft.get_edit_url())

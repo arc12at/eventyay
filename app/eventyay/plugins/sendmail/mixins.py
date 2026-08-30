@@ -19,7 +19,8 @@ def ensure_draft_defaults(data):
     data = data.copy()
     if not any(value.strip() for key, value in data.items() if key.startswith('subject_')):
         data['subject_0'] = _('Untitled draft')
-    if not any(value.strip() for key, value in data.items() if key.startswith('message_')):
+    if not any(value.strip() for key, value in data.items() if key.startswith('text_') or key.startswith('message_')):
+        data['text_0'] = ' '
         data['message_0'] = ' '
     return data
 
@@ -27,6 +28,17 @@ def ensure_draft_defaults(data):
 def calculate_attendee_recipient_count(event, qmf):
     if not qmf:
         return 0
+
+    if qmf.recipients == 'individual':
+        if not qmf.individual_attendees:
+            return 0
+        positions = OrderPosition.objects.filter(
+            order__event=event,
+            pk__in=qmf.individual_attendees,
+            canceled=False,
+        ).select_related('order')
+        unique_emails = {pos.attendee_email.strip().lower() for pos in positions if pos.attendee_email}
+        return len(unique_emails)
 
     orders = Order.objects.filter(event=event)
     order_statuses = qmf.order_status
@@ -144,9 +156,10 @@ class CopyDraftMixin:
                 except EmailQueueFilter.DoesNotExist:
                     qmf = None
 
+                body_field = 'message' if team_mode else 'text'
                 form_kwargs['initial'].update({
                     'subject': subject,
-                    'message': message,
+                    body_field: message,
                     'reply_to': qm.reply_to,
                     'bcc': qm.bcc,
                     'scheduled_at': qm.scheduled_at,
@@ -179,6 +192,11 @@ class CopyDraftMixin:
                                 form_kwargs['initial']['subevent'] = request.event.subevents.get(id=qmf.subevent)
                             except SubEvent.DoesNotExist:
                                 pass
+
+                        if qmf.individual_attendees:
+                            form_kwargs['initial']['individual_attendees'] = OrderPosition.objects.filter(
+                                id__in=qmf.individual_attendees
+                            )
 
                         for field in ['subevents_from', 'subevents_to', 'order_created_from', 'order_created_to']:
                             value = getattr(qmf, field, None)
