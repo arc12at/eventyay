@@ -15,6 +15,15 @@ from .models import ComposingFor, EmailQueue, EmailQueueFilter
 logger = logging.getLogger(__name__)
 
 
+def ensure_draft_defaults(data):
+    data = data.copy()
+    if not any(value.strip() for key, value in data.items() if key.startswith('subject_')):
+        data['subject_0'] = _('Untitled draft')
+    if not any(value.strip() for key, value in data.items() if key.startswith('message_')):
+        data['message_0'] = ' '
+    return data
+
+
 def calculate_attendee_recipient_count(event, qmf):
     if not qmf:
         return 0

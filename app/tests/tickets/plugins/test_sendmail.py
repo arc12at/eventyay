@@ -2,6 +2,7 @@ import datetime
 
 import pytest
 from django.core import mail as djmail
+from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
 
@@ -593,3 +594,29 @@ def test_sendmail_save_draft(logged_in_client, sendmail_url, event, order, pos):
     with scopes_disabled():
         assert draft.send() is False
     assert len(djmail.outbox) == 0
+
+
+@pytest.mark.django_db
+def test_edit_draft_without_filters_redirects_to_composer(logged_in_client, event):
+    from eventyay.plugins.sendmail.models import EmailQueue
+
+    draft = EmailQueue.objects.create(
+        event=event,
+        composing_for='attendees',
+        subject='Draft without filters',
+        message='Message',
+        is_draft=True,
+    )
+    edit_url = reverse(
+        'control:event.mail.edit',
+        kwargs={
+            'organizer': event.organizer.slug,
+            'event': event.slug,
+            'pk': draft.pk,
+        },
+    )
+
+    response = logged_in_client.get(edit_url)
+
+    assert response.status_code == 302
+    assert response.url == draft.get_edit_url()

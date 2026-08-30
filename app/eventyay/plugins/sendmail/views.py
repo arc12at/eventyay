@@ -31,7 +31,11 @@ from eventyay.control.permissions import EventPermissionRequiredMixin
 from eventyay.control.views.event import EventSettingsFormView, EventSettingsViewMixin
 from eventyay.helpers.timezone import attach_timezone_to_naive_clock_time, get_browser_timezone, format_scheduled_datetime
 from eventyay.plugins.sendmail.forms import EmailQueueEditForm
-from eventyay.plugins.sendmail.mixins import CopyDraftMixin, QueryFilterOrderingMixin
+from eventyay.plugins.sendmail.mixins import (
+    CopyDraftMixin,
+    QueryFilterOrderingMixin,
+    ensure_draft_defaults,
+)
 from eventyay.plugins.sendmail.models import ComposingFor, EmailQueue, EmailQueueFilter, EmailQueueToUser
 from eventyay.plugins.sendmail.tasks import send_queued_mail
 
@@ -71,12 +75,7 @@ class SenderView(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyToMixin,
         if self.request.method == 'POST' and self.request.POST.get('action') == 'draft':
             data = kwargs.get('data')
             if data is not None:
-                data = data.copy()
-                if not any(v.strip() for k, v in data.items() if k.startswith('subject_')):
-                    data['subject_0'] = _('Untitled draft')
-                if not any(v.strip() for k, v in data.items() if k.startswith('message_')):
-                    data['message_0'] = ' '
-                kwargs['data'] = data
+                kwargs['data'] = ensure_draft_defaults(data)
 
         return kwargs
 
@@ -482,7 +481,7 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
 
     def dispatch(self, request, *args, **kwargs):
         obj = self.get_object()
-        if obj.is_draft and hasattr(obj, 'filters_data') and request.method == 'GET':
+        if obj.is_draft and request.method == 'GET':
             return redirect(obj.get_edit_url())
         return super().dispatch(request, *args, **kwargs)
 
@@ -494,12 +493,7 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
         if self.request.method == 'POST' and self.request.POST.get('action') == 'draft':
             data = kwargs.get('data')
             if data is not None:
-                data = data.copy()
-                if not any(v.strip() for k, v in data.items() if k.startswith('subject_')):
-                    data['subject_0'] = _('Untitled draft')
-                if not any(v.strip() for k, v in data.items() if k.startswith('message_')):
-                    data['message_0'] = ' '
-                kwargs['data'] = data
+                kwargs['data'] = ensure_draft_defaults(data)
 
         return kwargs
 
@@ -783,12 +777,7 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
         if self.request.method == 'POST' and self.request.POST.get('action') == 'draft':
             data = kwargs.get('data')
             if data is not None:
-                data = data.copy()
-                if not any(v.strip() for k, v in data.items() if k.startswith('subject_')):
-                    data['subject_0'] = _('Untitled draft')
-                if not any(v.strip() for k, v in data.items() if k.startswith('message_')):
-                    data['message_0'] = ' '
-                kwargs['data'] = data
+                kwargs['data'] = ensure_draft_defaults(data)
 
         return kwargs
 
