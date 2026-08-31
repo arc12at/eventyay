@@ -202,8 +202,8 @@ class MailForm(ScheduledAtValidationMixin, forms.Form):
         d = super().clean()
         if d is None:
             return d
-        d['has_filter_checkins'] = d.get('has_filter_checkins') == 'yes' or d.get('has_filter_checkins') is True
-        d['not_checked_in'] = d.get('not_checked_in') == 'yes' or d.get('not_checked_in') is True
+        d['has_filter_checkins'] = d.get('has_filter_checkins') in ('yes', True)
+        d['not_checked_in'] = d.get('not_checked_in') in ('yes', True)
         if self.draft_save:
             return d
         if d.get('subevent') and (d.get('subevents_from') or d.get('subevents_to')):

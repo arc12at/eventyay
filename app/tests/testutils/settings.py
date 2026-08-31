@@ -18,8 +18,6 @@ DATA_DIR = tmpdir.name
 LOG_DIR = os.path.join(DATA_DIR, 'logs')
 MEDIA_ROOT = os.path.join(DATA_DIR, 'media')
 SITE_URL = 'http://example.com'
-SITE_NETLOC = 'example.com'
-ALLOWED_HOSTS = ['*']
 
 atexit.register(tmpdir.cleanup)
 

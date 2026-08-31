@@ -147,7 +147,7 @@ class CopyDraftMixin:
                 message = qm.message
                 attachment = (
                     CachedFile.objects.filter(id__in=qm.attachments).first()
-                    if copy_id and not draft_id
+                    if qm.attachments
                     else None
                 )
 
@@ -206,7 +206,7 @@ class CopyDraftMixin:
                 if draft_id:
                     self.draft_id = qm.pk
                     self.loaded_draft = qm
-                    old_count = qm.recipients.count()
+                    old_count = qm.recipients.count() if hasattr(qm.recipients, 'count') else len(qm.recipients or [])
                     if team_mode:
                         new_count = calculate_team_recipient_count(request.event, qmf)
                     else:
