@@ -91,10 +91,12 @@
 
 {% block mail_extra %}
   <style>
-    /* Align the exclude_me checkbox with the input fields of other filters */
+    /* Align the exclude_me checkbox perfectly with the inputs by matching label height */
     .composer-filters .checkbox-align .col-md-3 {
-      display: block !important;
-      height: 44px; /* Approx height of two-line label (Title + Optional) */
+      display: none !important;
+    }
+    .composer-filters .checkbox-align .form-check {
+      margin-top: 58px !important;
     }
   </style>
   <dialog class="info-dialog" id="recipient-list-dialog" aria-label="{% translate 'Recipients' %}">
