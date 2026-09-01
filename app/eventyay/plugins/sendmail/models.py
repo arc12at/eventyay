@@ -513,7 +513,15 @@ class EmailQueueFilter(models.Model):
     order_created_from = models.DateTimeField(null=True, blank=True)
     order_created_to = models.DateTimeField(null=True, blank=True)
     orders = ArrayField(models.IntegerField(), blank=True, default=list)
+
     teams = ArrayField(models.IntegerField(), blank=True, default=list)
+    team_role = models.CharField(max_length=20, blank=True, default='')
+    permission_level = models.CharField(max_length=50, blank=True, default='')
+    status = models.CharField(max_length=10, blank=True, default='')
+    specific_people = ArrayField(models.IntegerField(), blank=True, default=list)
+    exclude_me = models.BooleanField(default=False)
+    tags = ArrayField(models.CharField(max_length=255), blank=True, null=True, default=list)
+
     individual_attendees = ArrayField(models.IntegerField(), blank=True, default=list)
 
     def __str__(self):
