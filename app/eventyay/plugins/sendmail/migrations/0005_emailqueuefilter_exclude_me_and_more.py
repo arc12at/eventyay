@@ -33,11 +33,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='emailqueuefilter',
-            name='tags',
-            field=django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=255), blank=True, default=list, null=True),
-        ),
-        migrations.AddField(
-            model_name='emailqueuefilter',
             name='team_role',
             field=models.CharField(blank=True, default='', max_length=20),
         ),

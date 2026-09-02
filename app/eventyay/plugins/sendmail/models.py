@@ -520,7 +520,6 @@ class EmailQueueFilter(models.Model):
     status = models.CharField(max_length=10, blank=True, default='')
     specific_people = ArrayField(models.IntegerField(), blank=True, default=list)
     exclude_me = models.BooleanField(default=False)
-    tags = ArrayField(models.CharField(max_length=255), blank=True, null=True, default=list)
 
     individual_attendees = ArrayField(models.IntegerField(), blank=True, default=list)
 

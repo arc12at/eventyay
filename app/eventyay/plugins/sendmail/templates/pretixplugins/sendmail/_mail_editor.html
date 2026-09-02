@@ -86,7 +86,7 @@
                             </button>
                         </div>
                         <div id="mail-message-edit" role="tabpanel">
-                            {{ form.text.as_field_group }}
+                            {% if form.text %}{{ form.text.as_field_group }}{% elif form.message %}{{ form.message.as_field_group }}{% endif %}
                         </div>
                         <div id="mail-message-preview" class="mail-message-preview-panel" role="tabpanel" hidden>
                             <div class="mail-preview-group">

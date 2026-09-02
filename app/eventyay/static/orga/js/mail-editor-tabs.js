@@ -2,7 +2,7 @@ const getActiveLocale = () => {
     const activeLanguageTab = document.querySelector(".mail-language-tab[aria-selected='true']")
     if (activeLanguageTab) return activeLanguageTab.dataset.locale
 
-    const message = document.querySelector("#id_text textarea[lang]")
+    const message = document.querySelector("#id_text textarea[lang], #id_message textarea[lang]")
     return message ? message.lang : ""
 }
 

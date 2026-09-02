@@ -603,7 +603,7 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
             self.output = {}
             event = self.request.event
             subject = form.cleaned_data['subject']
-            message = form.cleaned_data['text']
+            message = form.cleaned_data['message']
 
             if form.instance.composing_for == ComposingFor.TEAMS:
                 base_placeholders = ['event', 'team']
@@ -629,7 +629,7 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
                             dict(context_dict),
                         )
                     except KeyError as e:
-                        form.add_error('text', _('Invalid placeholder(s): {}').format(str(e)))
+                        form.add_error('message', _('Invalid placeholder(s): {}').format(str(e)))
                         return self.form_invalid(form)
 
                     self.output[l] = {
@@ -877,8 +877,8 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
         if is_draft:
             if not form.cleaned_data.get('subject'):
                 form.cleaned_data['subject'] = LazyI18nString({self.request.event.settings.locale or 'en': str(_('Untitled draft'))})
-            if not form.cleaned_data.get('text'):
-                form.cleaned_data['text'] = LazyI18nString({self.request.event.settings.locale or 'en': ''})
+            if not form.cleaned_data.get('message'):
+                form.cleaned_data['message'] = LazyI18nString({self.request.event.settings.locale or 'en': ''})
             if not form.cleaned_data.get('teams'):
                 form.cleaned_data['teams'] = []
 
@@ -899,7 +899,7 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
                 mail(
                     email=test_email,
                     subject=form.cleaned_data['subject'],
-                    template=form.cleaned_data['text'],
+                    template=form.cleaned_data['message'],
                     context=context_dict,
                     event=event,
                     locale=event.settings.locale,
@@ -917,7 +917,7 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
 
             return self.render_to_response(self.get_context_data(form=form))
         subject = form.cleaned_data['subject']
-        message = form.cleaned_data['text']
+        message = form.cleaned_data['message']
 
         self.output = {}
         for l in event.settings.locales:
@@ -939,7 +939,7 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
                         dict(context_dict),
                     )
                 except KeyError as e:
-                    form.add_error('text', _('Invalid placeholder(s): {}').format(str(e)))
+                    form.add_error('message', _('Invalid placeholder(s): {}').format(str(e)))
                     return self.form_invalid(form)
 
                 if self.request.POST.get('action') == 'preview':
