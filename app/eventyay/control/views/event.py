@@ -1796,13 +1796,19 @@ class QuickSetupView(FormView):
 
         self.request.event.plugins = ','.join(plugins_active)
         self.request.event.save()
-        messages.success(
-            self.request,
-            _(
-                'Your changes have been saved. You can now go on with looking at the details '
-                'or take your event live to start selling!'
-            ),
-        )
+        if self.request.POST.get('action') == 'draft':
+            messages.success(
+                self.request,
+                _('Your draft ticketing setup has been saved.'),
+            )
+        else:
+            messages.success(
+                self.request,
+                _(
+                    'Your changes have been saved. You can now go on with looking at the details '
+                    'or take your event live to start selling!'
+                ),
+            )
 
         return redirect(
             reverse(
