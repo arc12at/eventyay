@@ -22,10 +22,10 @@
                     </div>
                 {% endif %}
                 {% if opinion.rating %}
-                    <div class="feedback-rating mb-2" aria-label="{% translate 'Rating' %}: {{ opinion.rating_emoji }} {{ opinion.rating_label }}" title="{{ opinion.rating_emoji }} {{ opinion.rating_label }}">
+                    <div class="feedback-rating mb-2" aria-label="{% translate 'Feedback Rating' %}: {{ opinion.rating_emoji }} {{ opinion.rating_label }}" title="{% translate 'Feedback Rating' %}: {{ opinion.rating_emoji }} {{ opinion.rating_label }}">
                         <span class="feedback-rating-badge">
-                            <span class="feedback-rating-emoji">{{ opinion.rating_emoji }}</span>
-                            <span class="feedback-rating-label">{{ opinion.rating_label }}</span>
+                            <span class="feedback-rating-emoji feedback-rating-badge-emoji">{{ opinion.rating_emoji }}</span>
+                            <span class="feedback-rating-label feedback-rating-badge-label">{{ opinion.rating_label }}</span>
                         </span>
                     </div>
                 {% endif %}

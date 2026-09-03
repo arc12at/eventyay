@@ -74,6 +74,10 @@ class FeedbackForm(ReadOnlyFlag, forms.ModelForm):
         parent_id = self.cleaned_data.get('parent')
         if parent_id:
             try:
+                parent_id = int(parent_id)
+            except (TypeError, ValueError):
+                raise forms.ValidationError(_('Invalid parent feedback.'))
+            try:
                 # Scope via the talk relation to avoid cross-session replies
                 # and satisfy django_scopes on Feedback queries.
                 self.instance.talk.feedback.get(id=parent_id)
@@ -83,14 +87,23 @@ class FeedbackForm(ReadOnlyFlag, forms.ModelForm):
 
     def clean_rating(self):
         rating = self.cleaned_data.get('rating')
-        if rating is not None and not (1 <= rating <= 5):
-            raise forms.ValidationError(_('Rating must be between 1 and 5.'))
+        if rating is not None:
+            try:
+                rating = int(rating)
+            except (TypeError, ValueError):
+                raise forms.ValidationError(_('Invalid rating selected.'))
+            if rating not in Feedback.EMOJI_RATING_MAP:
+                raise forms.ValidationError(_('Rating must be between 1 and 5.'))
         return rating
 
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get('parent'):
             cleaned_data['rating'] = None
+        else:
+            rating = cleaned_data.get('rating')
+            if rating is not None and rating not in Feedback.EMOJI_RATING_MAP:
+                raise forms.ValidationError({'rating': _('Invalid rating selected.')})
         return cleaned_data
 
     class Meta:

@@ -23,8 +23,8 @@ class AuthorSerializer(serializers.ModelSerializer):
 @register_serializer(versions=CURRENT_VERSIONS)
 class FeedbackReplySerializer(I18nAwareModelSerializer):
     author = serializers.SerializerMethodField()
-    rating_emoji = serializers.CharField(source='rating_emoji', read_only=True)
-    rating_label = serializers.CharField(source='rating_label', read_only=True)
+    rating_emoji = serializers.CharField(read_only=True)
+    rating_label = serializers.CharField(read_only=True)
 
     class Meta:
         model = Feedback
@@ -46,8 +46,8 @@ class FeedbackReplySerializer(I18nAwareModelSerializer):
 class FeedbackSerializer(I18nAwareModelSerializer):
     author = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
-    rating_emoji = serializers.CharField(source='rating_emoji', read_only=True)
-    rating_label = serializers.CharField(source='rating_label', read_only=True)
+    rating_emoji = serializers.CharField(read_only=True)
+    rating_label = serializers.CharField(read_only=True)
 
     class Meta:
         model = Feedback

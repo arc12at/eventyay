@@ -837,12 +837,14 @@ dialog.agenda-wip-preview-leave-dialog::backdrop {
   transform: scale(1.08);
 }
 
-.emoji-rating-label .emoji-icon {
+.emoji-rating-label .emoji-icon,
+.emoji-rating-label .emoji-rating-icon {
   font-size: 1.4rem;
   line-height: 1.2;
 }
 
-.emoji-rating-label .emoji-text {
+.emoji-rating-label .emoji-text,
+.emoji-rating-label .emoji-rating-text {
   font-size: 0.72rem;
   margin-top: 0.2rem;
   color: #555;
@@ -851,7 +853,9 @@ dialog.agenda-wip-preview-leave-dialog::backdrop {
 }
 
 .emoji-rating-option input[type="radio"]:checked + .emoji-rating-label .emoji-text,
-.emoji-rating-label.selected .emoji-text {
+.emoji-rating-option input[type="radio"]:checked + .emoji-rating-label .emoji-rating-text,
+.emoji-rating-label.selected .emoji-text,
+.emoji-rating-label.selected .emoji-rating-text {
   color: #0b5cab;
   font-weight: 600;
 }
@@ -867,12 +871,14 @@ dialog.agenda-wip-preview-leave-dialog::backdrop {
   vertical-align: middle;
 }
 
-.feedback-rating-badge .feedback-rating-emoji {
+.feedback-rating-badge .feedback-rating-emoji,
+.feedback-rating-badge .feedback-rating-badge-emoji {
   font-size: 1.05rem;
   line-height: 1;
 }
 
-.feedback-rating-badge .feedback-rating-label {
+.feedback-rating-badge .feedback-rating-label,
+.feedback-rating-badge .feedback-rating-badge-label {
   font-weight: 500;
   color: #495057;
   font-size: 0.8rem;

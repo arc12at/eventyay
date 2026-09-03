@@ -122,9 +122,9 @@
                                 <strong class="mr-2 comment-author-name">{% if fb.author %}{{ fb.author.get_display_name }}{% else %}{{ phrases.agenda.anonymous|default:"Anonymous" }}{% endif %}</strong>
                                 <small class="text-muted">{{ fb.created|timesince }} {% translate "ago" %}</small>
                                 {% if fb.rating %}
-                                    <span class="feedback-rating-badge ml-2" aria-label="{% translate 'Rating' %}: {{ fb.rating_emoji }} {{ fb.rating_label }}" title="{{ fb.rating_emoji }} {{ fb.rating_label }}">
-                                        <span class="feedback-rating-emoji">{{ fb.rating_emoji }}</span>
-                                        <span class="feedback-rating-label">{{ fb.rating_label }}</span>
+                                    <span class="feedback-rating-badge ml-2" aria-label="{% translate 'Feedback Rating' %}: {{ fb.rating_emoji }} {{ fb.rating_label }}" title="{% translate 'Feedback Rating' %}: {{ fb.rating_emoji }} {{ fb.rating_label }}">
+                                        <span class="feedback-rating-emoji feedback-rating-badge-emoji">{{ fb.rating_emoji }}</span>
+                                        <span class="feedback-rating-label feedback-rating-badge-label">{{ fb.rating_label }}</span>
                                     </span>
                                 {% endif %}
                             </div>
