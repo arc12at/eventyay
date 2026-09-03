@@ -1,3 +1,5 @@
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy as _n
@@ -42,7 +44,12 @@ class Feedback(PretalxModel):
         on_delete=models.PROTECT,
         verbose_name=_n('Speaker', 'Speakers', 1),
     )
-    rating = models.IntegerField(null=True, blank=True, verbose_name=_('Rating'))
+    rating = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name=_('Rating'),
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
     review = models.TextField(verbose_name=_('Feedback'), help_text=phrases.base.use_markdown)
     
     author = models.ForeignKey(
@@ -101,6 +108,18 @@ class Feedback(PretalxModel):
         if self.rating and self.rating in self.EMOJI_RATING_MAP:
             return str(self.EMOJI_RATING_MAP[self.rating][1])
         return ''
+
+    def clean(self):
+        super().clean()
+        if self.parent:
+            self.rating = None
+        elif self.rating is not None and self.rating not in self.EMOJI_RATING_MAP:
+            raise ValidationError({'rating': _('Rating must be between 1 and 5.')})
+
+    def save(self, *args, **kwargs):
+        if self.parent:
+            self.rating = None
+        super().save(*args, **kwargs)
 
     def __str__(self):
         """Help when debugging."""

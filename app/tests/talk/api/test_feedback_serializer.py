@@ -94,3 +94,28 @@ def test_feedback_form_clean_clears_rating_on_reply():
     cleaned = form.clean()
     assert cleaned['rating'] is None
 
+
+def test_feedback_model_clean_rating_validation():
+    from django.core.exceptions import ValidationError as DjangoValidationError
+    fb_valid = Feedback(rating=5)
+    fb_valid.clean()
+
+    fb_invalid = Feedback(rating=6)
+    with pytest.raises(DjangoValidationError):
+        fb_invalid.clean()
+
+    fb_reply = Feedback(parent=fb_valid, rating=4)
+    fb_reply.clean()
+    assert fb_reply.rating is None
+
+
+def test_feedback_serializer_validates_rating_range():
+    from rest_framework.exceptions import ValidationError as DRFValidationError
+    serializer = FeedbackSerializer()
+    assert serializer.validate_rating(5) == 5
+    with pytest.raises(DRFValidationError):
+        serializer.validate_rating(6)
+    with pytest.raises(DRFValidationError):
+        serializer.validate_rating(0)
+
+

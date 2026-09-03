@@ -115,48 +115,38 @@ export function initTalkFeedback(root = document) {
       radios.forEach((radio) => {
         const label = group.querySelector(`label[for="${radio.id}"]`);
         if (label) {
-          if (radio.checked) {
-            label.classList.add('selected');
-          } else {
-            label.classList.remove('selected');
-          }
+          label.classList.toggle('selected', radio.checked);
         }
       });
     }
 
-    radios.forEach((radio) => {
-      if (radio.checked) {
-        radio.dataset.wasChecked = 'true';
-      }
+    let activeRadio = group.querySelector('input[type="radio"]:checked');
 
-      radio.addEventListener('click', function () {
-        if (this.dataset.wasChecked === 'true') {
-          this.checked = false;
-          this.dataset.wasChecked = 'false';
-        } else {
-          radios.forEach((r) => {
-            r.dataset.wasChecked = 'false';
-          });
-          this.dataset.wasChecked = 'true';
-        }
-        updateSelectedVisuals();
-      });
-    });
-
-    const labels = group.querySelectorAll('.emoji-rating-label');
-    labels.forEach((label) => {
-      label.addEventListener('click', function (e) {
-        const forId = this.getAttribute('for');
+    group.querySelectorAll('.emoji-rating-label').forEach((label) => {
+      label.addEventListener('click', (e) => {
+        e.preventDefault();
+        const forId = label.getAttribute('for');
         const radio = group.querySelector(`#${forId}`);
         if (!radio) {
           return;
         }
-        if (radio.checked && radio.dataset.wasChecked === 'true') {
-          e.preventDefault();
+
+        if (radio === activeRadio) {
           radio.checked = false;
-          radio.dataset.wasChecked = 'false';
-          updateSelectedVisuals();
+          activeRadio = null;
+        } else {
+          radio.checked = true;
+          activeRadio = radio;
         }
+        radio.dispatchEvent(new Event('change', { bubbles: true }));
+        updateSelectedVisuals();
+      });
+    });
+
+    radios.forEach((radio) => {
+      radio.addEventListener('change', () => {
+        activeRadio = group.querySelector('input[type="radio"]:checked');
+        updateSelectedVisuals();
       });
     });
 
