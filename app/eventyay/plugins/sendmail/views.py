@@ -903,8 +903,9 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
                     context=context_dict,
                     event=event,
                     locale=event.settings.locale,
-                    sender=self._get_reply_to_for_bulk_email() or event.settings.get('mail_from'),
-                    event_bcc=event.settings.get('mail_bcc'),
+                    sender=event.settings.get('mail_from'),
+                    event_reply_to=form.cleaned_data.get('reply_to') or self._get_reply_to_for_bulk_email(),
+                    event_bcc=form.cleaned_data.get('bcc') or event.settings.get('mail_bcc'),
                     user=user,
                     auto_email=False,
                     sync_send=True,
@@ -965,7 +966,9 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
                     "error": None
                 })
         except Exception:
-            pass
+            logger.exception("Failed to build team mail recipients list")
+            form.add_error(None, _('An error occurred while resolving recipients.'))
+            return self.form_invalid(form)
 
         if not recipients_list and not is_draft:
             messages.error(self.request, _('There are no valid recipients for the selected teams.'))
@@ -988,12 +991,15 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
         attachment = form.cleaned_data.get('attachment')
         attachment_ids = [] if is_draft or not attachment else [attachment.id]
 
+        reply_to_val = form.cleaned_data.get('reply_to') or self._get_reply_to_for_bulk_email() or ''
+        bcc_val = form.cleaned_data.get('bcc') or event.settings.get('mail_bcc') or ''
+
         if mail_instance:
             mail_instance.subject = subject_val
             mail_instance.message = message_val
             mail_instance.attachments = attachment_ids
-            mail_instance.reply_to = self._get_reply_to_for_bulk_email() or ''
-            mail_instance.bcc = event.settings.get('mail_bcc')
+            mail_instance.reply_to = reply_to_val
+            mail_instance.bcc = bcc_val
             mail_instance.scheduled_at = scheduled_at
             mail_instance.is_draft = is_draft
             mail_instance.save()
@@ -1014,8 +1020,8 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
                 subject=subject_val,
                 message=message_val,
                 locale=event.settings.locale,
-                reply_to=self._get_reply_to_for_bulk_email() or '',
-                bcc=event.settings.get('mail_bcc'),
+                reply_to=reply_to_val,
+                bcc=bcc_val,
                 attachments=attachment_ids,
                 scheduled_at=scheduled_at,
                 is_draft=is_draft,
@@ -1035,6 +1041,11 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
                 order_created_to=None,
                 orders=[],
                 teams=[team.pk for team in form.cleaned_data.get('teams', [])],
+                team_role=form.cleaned_data.get('team_role', ''),
+                permission_level=form.cleaned_data.get('permission_level', ''),
+                status=form.cleaned_data.get('status', ''),
+                specific_people=[u.pk for u in form.cleaned_data.get('specific_people', [])],
+                exclude_me=bool(form.cleaned_data.get('exclude_me', False)),
             )
 
         mail_instance.recipients.all().delete()

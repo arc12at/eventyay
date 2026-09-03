@@ -14,8 +14,8 @@ const getActiveLocale = () => {
 
 const getMessageHtml = (locale) => {
     const textarea = locale
-        ? document.querySelector(`#id_text textarea[lang="${locale}"]`)
-        : document.querySelector("#id_text textarea[lang]")
+        ? document.querySelector(`#id_text textarea[lang="${locale}"], #id_message textarea[lang="${locale}"]`)
+        : document.querySelector("#id_text textarea[lang], #id_message textarea[lang]")
     return textarea ? textarea.value : ""
 }
 

@@ -18,6 +18,7 @@ from eventyay.base.email import get_available_placeholders
 from eventyay.base.forms import PlaceholderValidator, SettingsForm
 from eventyay.base.forms.widgets import SplitDateTimePickerWidget
 from eventyay.base.meetup import is_meetup_event
+from eventyay.base.models.auth import User
 from eventyay.base.models.base import CachedFile
 from eventyay.base.models.checkin import CheckinList
 from eventyay.base.models.event import SubEvent
@@ -1009,8 +1010,6 @@ class TeamMailForm(ScheduledAtValidationMixin, forms.Form):
             initial='active',
         )
 
-        from eventyay.base.models import User
-
         users_qs = User.objects.filter(teams__organizer=self.event.organizer).distinct()
         self.fields['specific_people'] = forms.ModelMultipleChoiceField(
             queryset=users_qs,
@@ -1086,15 +1085,15 @@ class TeamMailForm(ScheduledAtValidationMixin, forms.Form):
         exclude_me = self.cleaned_data.get('exclude_me')
         
         # Build queryset
-        from eventyay.base.models import User
-        qs = User.objects.filter(teams__organizer=self.event.organizer)
-        
+        team_filters = {'teams__organizer': self.event.organizer}
         if teams:
-            qs = qs.filter(teams__in=teams)
+            team_filters['teams__in'] = teams
         if team_role:
-            qs = qs.filter(teams__teamshifts_role=team_role)
+            team_filters['teams__teamshifts_role'] = team_role
         if permission_level:
-            qs = qs.filter(**{f"teams__{permission_level}": True})
+            team_filters[f'teams__{permission_level}'] = True
+
+        qs = User.objects.filter(**team_filters)
         if status == 'active':
             qs = qs.filter(is_active=True)
         elif status == 'inactive':

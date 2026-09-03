@@ -159,6 +159,11 @@ class EmailQueue(models.Model):
                 order_created_to=orig_filter.order_created_to,
                 orders=list(orig_filter.orders),
                 teams=list(orig_filter.teams),
+                team_role=orig_filter.team_role,
+                permission_level=orig_filter.permission_level,
+                status=orig_filter.status,
+                specific_people=list(orig_filter.specific_people),
+                exclude_me=orig_filter.exclude_me,
                 individual_attendees=list(getattr(orig_filter, 'individual_attendees', []) or []),
             )
 
