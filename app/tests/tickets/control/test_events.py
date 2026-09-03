@@ -289,7 +289,9 @@ class EventsTest(SoupTest):
         # Verify numbered cards exist
         cards = doc.select('.quickstart-card')
         assert len(cards) >= 6
-        # Verify review summary card elements exist
+        # Verify review summary card elements and status box exist
+        assert doc.select('#step-review')
+        assert doc.select('#review-status-box')
         assert doc.select('#review-currency')
         assert doc.select('#review-ticket-types')
         assert doc.select('#review-total-capacity')
@@ -300,7 +302,28 @@ class EventsTest(SoupTest):
         assert doc.select('.btn-save-draft')
         assert doc.select('.btn-save-continue')
 
-    def test_quick_setup_save_draft(self):
+    def test_quick_setup_save_continue_navigation(self):
+        doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))
+        fields = extract_form_fields(doc.select('.container-fluid form')[0])
+        fields['action'] = 'continue'
+        fields['form-TOTAL_FORMS'] = '1'
+        fields['form-INITIAL_FORMS'] = '1'
+        fields['form-MIN_NUM_FORMS'] = '0'
+        fields['form-MAX_NUM_FORMS'] = '1000'
+        fields['form-0-name_0'] = 'Standard Ticket'
+        fields['form-0-default_price'] = '20.00'
+        fields['form-0-quota'] = '100'
+        fields['payment_manualpayment__enabled'] = 'on'
+
+        response = self.client.post(
+            '/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug),
+            fields,
+            follow=False,
+        )
+        assert response.status_code == 302
+        assert response['Location'] == '/control/event/%s/%s/live/' % (self.orga1.slug, self.event1.slug)
+
+    def test_quick_setup_save_draft_navigation(self):
         doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))
         fields = extract_form_fields(doc.select('.container-fluid form')[0])
         fields['action'] = 'draft'
@@ -312,17 +335,67 @@ class EventsTest(SoupTest):
         fields['form-0-default_price'] = '0.00'
         fields['form-0-quota'] = '50'
 
+        response = self.client.post(
+            '/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug),
+            fields,
+            follow=False,
+        )
+        assert response.status_code == 302
+        assert response['Location'] == '/control/event/%s/%s/' % (self.orga1.slug, self.event1.slug)
+
+    def test_quick_setup_save_draft_bypasses_optional_sections(self):
+        doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))
+        fields = extract_form_fields(doc.select('.container-fluid form')[0])
+        fields['action'] = 'draft'
+        # Paid ticket exists but NO payment method enabled; Bank transfer checked but NO bank details
+        fields['payment_banktransfer__enabled'] = 'on'
+        fields.pop('payment_banktransfer_bank_details_0', None)
+        fields.pop('payment_banktransfer_bank_details_type', None)
+        fields['form-TOTAL_FORMS'] = '1'
+        fields['form-INITIAL_FORMS'] = '1'
+        fields['form-MIN_NUM_FORMS'] = '0'
+        fields['form-MAX_NUM_FORMS'] = '1000'
+        fields['form-0-name_0'] = 'Draft Paid Ticket'
+        fields['form-0-default_price'] = '25.00'
+        fields['form-0-quota'] = '50'
+
         doc = self.post_doc(
             '/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug),
             fields,
         )
         assert len(doc.select('.alert-success')) > 0
+        assert any('draft' in alert.text.lower() for alert in doc.select('.alert-success'))
         self.event1.refresh_from_db()
         with scopes_disabled():
             assert self.event1.products.count() == 1
             item = self.event1.products.first()
-            assert str(item.name) == 'Draft ticket'
-            assert item.default_price == Decimal('0.00')
+            assert str(item.name) == 'Draft Paid Ticket'
+
+    def test_quick_setup_save_continue_requires_bank_details(self):
+        doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))
+        fields = extract_form_fields(doc.select('.container-fluid form')[0])
+        fields['action'] = 'continue'
+        fields['payment_banktransfer__enabled'] = 'on'
+        # Missing bank details should cause validation error on continue
+        fields.pop('payment_banktransfer_bank_details_0', None)
+        fields.pop('payment_banktransfer_bank_details_type', None)
+        fields['form-TOTAL_FORMS'] = '1'
+        fields['form-INITIAL_FORMS'] = '1'
+        fields['form-MIN_NUM_FORMS'] = '0'
+        fields['form-MAX_NUM_FORMS'] = '1000'
+        fields['form-0-name_0'] = 'Standard Ticket'
+        fields['form-0-default_price'] = '25.00'
+        fields['form-0-quota'] = '50'
+
+        response = self.client.post(
+            '/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug),
+            fields,
+            follow=False,
+        )
+        assert response.status_code == 200
+        self.event1.refresh_from_db()
+        with scopes_disabled():
+            assert self.event1.products.count() == 0
 
     def test_quick_setup_checkout_access(self):
         doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))

@@ -30,10 +30,10 @@ $(function () {
 
             if (is_paid) {
                 paid_tickets += 1;
-                $row.find(".col-status").html('<span class="quickstart-status-badge badge-paid">Paid</span>');
+                $row.find(".col-status").html('<span class="quickstart-status-badge badge-paid">' + gettext("Paid") + '</span>');
             } else {
                 free_tickets += 1;
-                $row.find(".col-status").html('<span class="quickstart-status-badge badge-free">Free</span>');
+                $row.find(".col-status").html('<span class="quickstart-status-badge badge-free">' + gettext("Free") + '</span>');
             }
 
             // Quota calculation
@@ -72,6 +72,9 @@ $(function () {
         var currency = $("#id_currency").val() || "";
         $("#review-currency").text(currency);
 
+        var total_tickets = parseInt($("#review-ticket-types").text(), 10) || 0;
+        var paid_tickets = parseInt($("#review-paid-tickets").text(), 10) || 0;
+
         // Login required
         var login_req = $("#id_require_registered_account_for_tickets").is(":checked");
         $("#review-login-required").text(login_req ? gettext("Yes") : gettext("No"));
@@ -103,6 +106,56 @@ $(function () {
             $("#review-payment-methods").text(selected_methods.join(", "));
         } else {
             $("#review-payment-methods").text(gettext("None selected"));
+        }
+
+        // Surface missing required configuration
+        var missing_items = [];
+        if (total_tickets === 0) {
+            missing_items.push({
+                text: gettext("At least one ticket type is required to sell tickets."),
+                target: "#step-tickets"
+            });
+            $("#review-ticket-types-missing").show();
+        } else {
+            $("#review-ticket-types-missing").hide();
+        }
+
+        if (paid_tickets > 0 && selected_methods.length === 0) {
+            missing_items.push({
+                text: gettext("At least one payment method is required for paid tickets."),
+                target: "#step-payment"
+            });
+            $("#review-payment-missing").show();
+        } else {
+            $("#review-payment-missing").hide();
+        }
+
+        if (!currency) {
+            missing_items.push({
+                text: gettext("Event currency must be selected."),
+                target: "#step-currency"
+            });
+        }
+
+        var $statusBox = $("#review-status-box");
+        if (!$statusBox.find(".server-errors").length) {
+            if (missing_items.length > 0) {
+                var html = '<div class="review-status-warning">' +
+                    '<div class="status-warning-title"><i class="fa fa-exclamation-triangle"></i> <strong>' +
+                    gettext("Missing required configuration:") + '</strong></div>' +
+                    '<ul class="review-missing-list">';
+                for (var i = 0; i < missing_items.length; i++) {
+                    html += '<li><a href="' + missing_items[i].target + '">' + missing_items[i].text + '</a></li>';
+                }
+                html += '</ul><div class="status-warning-hint">' +
+                    gettext("Save draft can save without these, but Save and continue requires them.") + '</div></div>';
+                $statusBox.html(html);
+            } else {
+                $statusBox.html(
+                    '<div class="review-status-success"><i class="fa fa-check-circle"></i> <span>' +
+                    gettext("All essential setup steps are complete. Ready to continue!") + '</span></div>'
+                );
+            }
         }
     };
 

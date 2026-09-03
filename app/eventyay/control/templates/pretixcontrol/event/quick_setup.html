@@ -11,6 +11,7 @@
 {% block content %}
 <form action="" method="post" class="form-horizontal" id="quickstart-form">
     {% csrf_token %}
+    {% bootstrap_form_errors form %}
     <div class="quickstart-wizard-container">
         <!-- Header -->
         <div class="quickstart-header">
@@ -394,6 +395,36 @@
                         {% trans "Review your basic ticket setup before saving." %}
                     </div>
                     <div class="quickstart-card-body">
+                        <div id="review-status-box" class="review-status-box">
+                            {% if form.errors or formset.errors %}
+                                <div class="review-status-warning server-errors">
+                                    <div class="status-warning-title">
+                                        <i class="fa fa-exclamation-circle"></i>
+                                        <strong>{% trans "Missing required configuration or errors:" %}</strong>
+                                    </div>
+                                    <ul class="review-missing-list">
+                                        {% for error in form.non_field_errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                        {% for field in form %}
+                                            {% for error in field.errors %}
+                                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                            {% endfor %}
+                                        {% endfor %}
+                                        {% for f in formset %}
+                                            {% for error in f.non_field_errors %}
+                                                <li>{{ error }}</li>
+                                            {% endfor %}
+                                            {% for field in f %}
+                                                {% for error in field.errors %}
+                                                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                                {% endfor %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
                         <ul class="review-summary-list">
                             <li class="review-item">
                                 <span class="review-label"><i class="fa fa-globe"></i> {% trans "Currency" %}</span>
@@ -401,7 +432,10 @@
                             </li>
                             <li class="review-item">
                                 <span class="review-label"><i class="fa fa-ticket"></i> {% trans "Ticket types" %}</span>
-                                <span class="review-value" id="review-ticket-types">0</span>
+                                <div class="review-item-right">
+                                    <span class="review-value" id="review-ticket-types">0</span>
+                                    <span id="review-ticket-types-missing" class="review-badge-missing" style="display: none;">{% trans "Required" %}</span>
+                                </div>
                             </li>
                             <li class="review-item">
                                 <span class="review-label"><i class="fa fa-users"></i> {% trans "Total capacity" %}</span>
@@ -429,7 +463,10 @@
                             </li>
                             <li class="review-item">
                                 <span class="review-label"><i class="fa fa-credit-card"></i> {% trans "Payment methods" %}</span>
-                                <span class="review-value" id="review-payment-methods">{% trans "None selected" %}</span>
+                                <div class="review-item-right">
+                                    <span class="review-value" id="review-payment-methods">{% trans "None selected" %}</span>
+                                    <span id="review-payment-missing" class="review-badge-missing" style="display: none;">{% trans "Required" %}</span>
+                                </div>
                             </li>
                         </ul>
                         <button type="button" class="btn btn-edit-setup" id="btn-edit-setup">

@@ -1836,7 +1836,8 @@ class QuickSetupForm(I18nForm):
             del self.fields['payment_banktransfer_bank_details']
         else:
             self.fields['payment_banktransfer_bank_details'].required = False
-            
+            self.fields['payment_banktransfer_bank_details_type'].required = False
+
         if 'eventyay.plugins.manualpayment' not in plugins_available:
             del self.fields['payment_manualpayment__enabled']
 
@@ -1846,17 +1847,22 @@ class QuickSetupForm(I18nForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        if cleaned_data.get('payment_banktransfer__enabled'):
-            provider = BankTransfer(self.obj)
-            cleaned_data = provider.settings_form_clean(cleaned_data)
-        
+        is_draft = getattr(self, 'data', None) and self.data.get('action') == 'draft'
+        if cleaned_data.get('payment_banktransfer__enabled') and not is_draft:
+            if not cleaned_data.get('payment_banktransfer_bank_details_type'):
+                self.add_error('payment_banktransfer_bank_details_type', _('This field is required.'))
+            else:
+                provider = BankTransfer(self.obj)
+                cleaned_data = provider.settings_form_clean(cleaned_data)
+
         tax_name = cleaned_data.get('tax_name')
         tax_rate = cleaned_data.get('tax_rate')
-        if tax_name and tax_rate is None:
-            self.add_error('tax_rate', _('Please enter a tax rate.'))
-        elif tax_rate is not None and not tax_name:
-            self.add_error('tax_name', _('Please enter a tax name.'))
-            
+        if not is_draft:
+            if tax_name and tax_rate is None:
+                self.add_error('tax_rate', _('Please enter a tax rate.'))
+            elif tax_rate is not None and not tax_name:
+                self.add_error('tax_name', _('Please enter a tax name.'))
+
         return cleaned_data
 
 
@@ -1881,6 +1887,11 @@ class QuickSetupProductForm(I18nForm):
         initial=100,
         required=False,
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if getattr(self, 'data', None) and self.data.get('action') == 'draft':
+            self.fields['name'].required = False
 
     def clean_default_price(self):
         value = self.cleaned_data.get('default_price')

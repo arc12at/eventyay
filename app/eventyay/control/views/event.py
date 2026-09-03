@@ -1748,7 +1748,7 @@ class QuickSetupView(FormView):
 
         subevent = self.request.event.subevents.first()
         for i, f in enumerate(self.formset):
-            if f in self.formset.deleted_forms or not f.has_changed():
+            if f in self.formset.deleted_forms or not f.has_changed() or not f.cleaned_data.get('name'):
                 continue
 
             product = self.request.event.products.create(
@@ -1801,6 +1801,15 @@ class QuickSetupView(FormView):
                 self.request,
                 _('Your draft ticketing setup has been saved.'),
             )
+            return redirect(
+                reverse(
+                    'control:event.index',
+                    kwargs={
+                        'organizer': self.request.event.organizer.slug,
+                        'event': self.request.event.slug,
+                    },
+                )
+            )
         else:
             messages.success(
                 self.request,
@@ -1809,16 +1818,15 @@ class QuickSetupView(FormView):
                     'or take your event live to start selling!'
                 ),
             )
-
-        return redirect(
-            reverse(
-                'control:event.index',
-                kwargs={
-                    'organizer': self.request.event.organizer.slug,
-                    'event': self.request.event.slug,
-                },
+            return redirect(
+                reverse(
+                    'control:event.live',
+                    kwargs={
+                        'organizer': self.request.event.organizer.slug,
+                        'event': self.request.event.slug,
+                    },
+                )
             )
-        )
 
     @cached_property
     def formset(self):
