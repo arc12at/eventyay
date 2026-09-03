@@ -18,6 +18,16 @@ class Feedback(PretalxModel):
         assumed to be directed to all speakers.
     """
 
+    # Maps integer rating values to (emoji, translated label) tuples.
+    # Order: 5 (best) → 1 (worst) matching the left-to-right display order.
+    EMOJI_RATING_MAP = {
+        5: ('😍', _('Excellent')),
+        4: ('🙂', _('Good')),
+        3: ('😐', _('Okay')),
+        2: ('🙁', _('Bad')),
+        1: ('😡', _('Terrible')),
+    }
+
     talk = models.ForeignKey(
         to='Submission',
         related_name='feedback',
@@ -79,6 +89,18 @@ class Feedback(PretalxModel):
     )
 
     objects = ScopedManager(event='talk__event')
+
+    @property
+    def rating_emoji(self) -> str:
+        if self.rating and self.rating in self.EMOJI_RATING_MAP:
+            return self.EMOJI_RATING_MAP[self.rating][0]
+        return ''
+
+    @property
+    def rating_label(self) -> str:
+        if self.rating and self.rating in self.EMOJI_RATING_MAP:
+            return str(self.EMOJI_RATING_MAP[self.rating][1])
+        return ''
 
     def __str__(self):
         """Help when debugging."""

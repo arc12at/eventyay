@@ -23,14 +23,16 @@ class AuthorSerializer(serializers.ModelSerializer):
 @register_serializer(versions=CURRENT_VERSIONS)
 class FeedbackReplySerializer(I18nAwareModelSerializer):
     author = serializers.SerializerMethodField()
+    rating_emoji = serializers.CharField(source='rating_emoji', read_only=True)
+    rating_label = serializers.CharField(source='rating_label', read_only=True)
 
     class Meta:
         model = Feedback
         fields = (
-            'id', 'talk', 'speaker', 'rating', 'review', 'author',
+            'id', 'talk', 'speaker', 'rating', 'rating_emoji', 'rating_label', 'review', 'author',
             'is_public', 'status', 'parent', 'created', 'updated'
         )
-        read_only_fields = ('author', 'status', 'created', 'updated', 'is_public')
+        read_only_fields = ('author', 'status', 'created', 'updated', 'is_public', 'rating_emoji', 'rating_label')
 
     def get_author(self, obj):
         if not obj.is_public:
@@ -44,14 +46,16 @@ class FeedbackReplySerializer(I18nAwareModelSerializer):
 class FeedbackSerializer(I18nAwareModelSerializer):
     author = serializers.SerializerMethodField()
     replies = serializers.SerializerMethodField()
+    rating_emoji = serializers.CharField(source='rating_emoji', read_only=True)
+    rating_label = serializers.CharField(source='rating_label', read_only=True)
 
     class Meta:
         model = Feedback
         fields = (
-            'id', 'talk', 'speaker', 'rating', 'review', 'author',
+            'id', 'talk', 'speaker', 'rating', 'rating_emoji', 'rating_label', 'review', 'author',
             'is_public', 'status', 'parent', 'created', 'updated', 'replies'
         )
-        read_only_fields = ('author', 'status', 'created', 'updated')
+        read_only_fields = ('author', 'status', 'created', 'updated', 'rating_emoji', 'rating_label')
 
     def get_author(self, obj):
         if not obj.is_public:
