@@ -806,9 +806,13 @@ dialog.agenda-wip-preview-leave-dialog::backdrop {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.35rem 0.6rem;
+  width: 62px;
+  height: 58px;
+  padding: 0.35rem 0.2rem;
   border-radius: 8px;
   border: 1.5px solid transparent;
+  box-sizing: border-box;
+  text-align: center;
   cursor: pointer;
   margin: 0;
   user-select: none;
@@ -850,6 +854,10 @@ dialog.agenda-wip-preview-leave-dialog::backdrop {
   color: #555;
   font-weight: 500;
   white-space: nowrap;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .emoji-rating-option input[type="radio"]:checked + .emoji-rating-label .emoji-text,
