@@ -370,12 +370,18 @@
 }
 
 .quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .info-tooltip-icon {
+  background: none;
+  border: none;
+  padding: 0;
   color: #94a3b8;
   cursor: pointer;
   margin-left: 4px;
+  line-height: 1;
+  vertical-align: middle;
 }
 
-.quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .info-tooltip-icon:hover {
+.quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .info-tooltip-icon:hover,
+.quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .info-tooltip-icon:focus {
   color: #475569;
 }
 
@@ -840,7 +846,7 @@
     margin-left: 0;
     padding-left: 0;
   }
-  .quickstart-wizard-container .quickstart-table-wrapper {
+  .quickstart-wizard-container .quickstart-ticket-table-wrapper {
     overflow-x: auto;
   }
   .quickstart-wizard-container .quickstart-action-bar {

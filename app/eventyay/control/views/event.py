@@ -1602,7 +1602,41 @@ class QuickSetupView(FormView):
 
     def post(self, request, *args, **kwargs):
         form = self.get_form()
-        if form.is_valid() and self.formset.is_valid():
+        form_is_valid = form.is_valid()
+        formset_is_valid = self.formset.is_valid()
+        is_draft = request.POST.get('action') == 'draft'
+
+        if form_is_valid and formset_is_valid and not is_draft:
+            named_tickets = [
+                f
+                for f in self.formset
+                if f not in self.formset.deleted_forms
+                and f.cleaned_data.get('name')
+                and str(f.cleaned_data.get('name')).strip()
+            ]
+            if not named_tickets:
+                form.add_error(None, _('At least one ticket type is required to continue.'))
+                form_is_valid = False
+
+            has_paid_ticket = any(
+                (f.cleaned_data.get('default_price') or Decimal('0')) > Decimal('0')
+                for f in named_tickets
+            )
+            if has_paid_ticket:
+                payment_enabled = any(
+                    bool(form.cleaned_data.get(k))
+                    for k in (
+                        'payment_banktransfer__enabled',
+                        'payment_manualpayment__enabled',
+                        'payment_stripe__enabled',
+                        'payment_paypal__enabled',
+                    )
+                )
+                if not payment_enabled:
+                    form.add_error(None, _('At least one payment method is required for paid tickets.'))
+                    form_is_valid = False
+
+        if form_is_valid and formset_is_valid:
             return self.form_valid(form)
         else:
             plugins_active = self.request.event.get_plugins()

@@ -191,9 +191,9 @@
                         <div class="quickstart-total-capacity form-inline">
                             <strong>{% trans "Total capacity:" %}</strong>
                             <span id="total-capacity"></span>
-                            <span class="info-tooltip-icon" data-toggle="tooltip" title="{% trans 'You can set a limit on the total number of tickets sold for your event, regardless of the ticket type.' %}" id="total-capacity-edit">
-                                <i class="fa fa-info-circle"></i>
-                            </span>
+                            <button type="button" class="info-tooltip-icon" data-toggle="tooltip" title="{% trans 'You can set a limit on the total number of tickets sold for your event, regardless of the ticket type.' %}" aria-label="{% trans 'Configure total capacity limit' %}" id="total-capacity-edit">
+                                <i class="fa fa-info-circle" aria-hidden="true"></i>
+                            </button>
                             {% bootstrap_field form.total_quota layout="inline" field_class="sr-only" %}
                         </div>
                     </div>

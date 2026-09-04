@@ -48,7 +48,13 @@ $(function () {
             }
         });
 
-        var cap_text = has_infinite || total_tickets === 0 ? "∞" : total_capacity.toString();
+        var override_quota = ($("#id_total_quota").val() || "").trim();
+        var cap_text;
+        if (override_quota !== "") {
+            cap_text = override_quota;
+        } else {
+            cap_text = has_infinite || total_tickets === 0 ? "∞" : total_capacity.toString();
+        }
         $("#total-capacity").text(cap_text);
         $("#review-total-capacity").text(cap_text);
         $("#review-ticket-types").text(total_tickets);
@@ -217,12 +223,19 @@ $(function () {
     $("#total-capacity-edit").on("click", function (e) {
         e.preventDefault();
         var current_cap = $("#total-capacity").text();
-        if (current_cap !== "∞") {
+        if (current_cap !== "∞" && !$("#id_total_quota").val()) {
             $("#id_total_quota").val(parseInt(current_cap, 10));
         }
         $("#total-capacity").hide();
         $("#id_total_quota").closest("div").removeClass("sr-only");
+        $("#id_total_quota").focus();
         $("#total-capacity-edit").hide();
+        update_tickets_and_capacity();
+    });
+
+    // Total capacity override input listener
+    $("#id_total_quota").on("change input keyup", function () {
+        update_tickets_and_capacity();
     });
 
     // Stepper navigation & smooth scroll
@@ -248,6 +261,13 @@ $(function () {
             scrollTop: $("#step-currency").offset().top - 80
         }, 300);
     });
+
+    // If total capacity is already set, show input field
+    if ($("#id_total_quota").val() && $("#id_total_quota").val().trim() !== "") {
+        $("#total-capacity").hide();
+        $("#id_total_quota").closest("div").removeClass("sr-only");
+        $("#total-capacity-edit").hide();
+    }
 
     // Initialize state on page load
     update_currency();

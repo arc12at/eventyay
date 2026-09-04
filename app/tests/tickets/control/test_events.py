@@ -397,6 +397,82 @@ class EventsTest(SoupTest):
         with scopes_disabled():
             assert self.event1.products.count() == 0
 
+    def test_quick_setup_save_continue_requires_at_least_one_named_ticket(self):
+        doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))
+        fields = extract_form_fields(doc.select('.container-fluid form')[0])
+        fields['action'] = 'continue'
+        fields['form-TOTAL_FORMS'] = '1'
+        fields['form-INITIAL_FORMS'] = '1'
+        fields['form-MIN_NUM_FORMS'] = '0'
+        fields['form-MAX_NUM_FORMS'] = '1000'
+        fields['form-0-DELETE'] = 'on'
+        fields['form-0-name_0'] = 'Standard Ticket'
+        fields['form-0-default_price'] = '20.00'
+        fields['payment_manualpayment__enabled'] = 'on'
+
+        response = self.client.post(
+            '/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug),
+            fields,
+            follow=False,
+        )
+        assert response.status_code == 200
+        self.event1.refresh_from_db()
+        with scopes_disabled():
+            assert self.event1.products.count() == 0
+
+    def test_quick_setup_save_continue_requires_payment_method_for_paid_tickets(self):
+        doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))
+        fields = extract_form_fields(doc.select('.container-fluid form')[0])
+        fields['action'] = 'continue'
+        fields['form-TOTAL_FORMS'] = '1'
+        fields['form-INITIAL_FORMS'] = '1'
+        fields['form-MIN_NUM_FORMS'] = '0'
+        fields['form-MAX_NUM_FORMS'] = '1000'
+        fields['form-0-name_0'] = 'Standard Ticket'
+        fields['form-0-default_price'] = '20.00'
+        fields['form-0-quota'] = '100'
+        fields.pop('payment_banktransfer__enabled', None)
+        fields.pop('payment_manualpayment__enabled', None)
+        fields.pop('payment_stripe__enabled', None)
+        fields.pop('payment_paypal__enabled', None)
+
+        response = self.client.post(
+            '/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug),
+            fields,
+            follow=False,
+        )
+        assert response.status_code == 200
+        self.event1.refresh_from_db()
+        with scopes_disabled():
+            assert self.event1.products.count() == 0
+
+    def test_quick_setup_save_continue_allowed_for_free_tickets_without_payment(self):
+        doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))
+        fields = extract_form_fields(doc.select('.container-fluid form')[0])
+        fields['action'] = 'continue'
+        fields['form-TOTAL_FORMS'] = '1'
+        fields['form-INITIAL_FORMS'] = '1'
+        fields['form-MIN_NUM_FORMS'] = '0'
+        fields['form-MAX_NUM_FORMS'] = '1000'
+        fields['form-0-name_0'] = 'Free Ticket'
+        fields['form-0-default_price'] = '0.00'
+        fields['form-0-quota'] = '100'
+        fields.pop('payment_banktransfer__enabled', None)
+        fields.pop('payment_manualpayment__enabled', None)
+        fields.pop('payment_stripe__enabled', None)
+        fields.pop('payment_paypal__enabled', None)
+
+        response = self.client.post(
+            '/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug),
+            fields,
+            follow=False,
+        )
+        assert response.status_code == 302
+        assert response['Location'] == '/control/event/%s/%s/live/' % (self.orga1.slug, self.event1.slug)
+        self.event1.refresh_from_db()
+        with scopes_disabled():
+            assert self.event1.products.count() == 1
+
     def test_quick_setup_checkout_access(self):
         doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))
         fields = extract_form_fields(doc.select('.container-fluid form')[0])
