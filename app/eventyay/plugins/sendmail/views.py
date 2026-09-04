@@ -602,8 +602,12 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
         if self.request.POST.get('action') == 'preview':
             self.output = {}
             event = self.request.event
-            subject = form.cleaned_data['subject']
-            message = form.cleaned_data['message']
+            subject = form.cleaned_data.get('subject')
+            if not subject:
+                subject = LazyI18nString({self.request.event.settings.locale or 'en': ''})
+            message = form.cleaned_data.get('text') or form.cleaned_data.get('message')
+            if not message:
+                message = LazyI18nString({self.request.event.settings.locale or 'en': ''})
 
             if form.instance.composing_for == ComposingFor.TEAMS:
                 base_placeholders = ['event', 'user', 'team']
@@ -629,7 +633,8 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
                             dict(context_dict),
                         )
                     except KeyError as e:
-                        form.add_error('message', _('Invalid placeholder(s): {}').format(str(e)))
+                        error_field = 'text' if 'text' in form.fields else 'message'
+                        form.add_error(error_field, _('Invalid placeholder(s): {}').format(str(e)))
                         return self.form_invalid(form)
 
                     self.output[l] = {

@@ -373,21 +373,21 @@
 }
 
 .mail-composer .mail-editor-tabs[data-mail-editor-active="edit"] #mail-message-edit [data-tiptap-wrapper]:focus-within {
-  z-index: 10;
+  z-index: 1055;
 }
 
 .mail-composer .mail-editor-tabs[data-mail-editor-active="edit"] #mail-message-edit [data-tiptap-wrapper]:has([aria-expanded="true"]) {
-  z-index: 10;
+  z-index: 1060;
 }
 
 .mail-composer .tiptap-placeholder-menu {
   position: relative;
-  z-index: 10;
+  z-index: 1060;
 }
 
 .mail-composer .tiptap-placeholder-dropdown {
   left: auto;
   max-height: min(280px, 50vh);
   right: 0;
-  z-index: 1050;
+  z-index: 1060;
 }
