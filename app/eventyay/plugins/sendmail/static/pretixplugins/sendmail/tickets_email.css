@@ -247,6 +247,58 @@
   width: 100%;
 }
 
+.mail-composer .composer-filters .composer-filter-checkbox,
+.mail-composer .composer-filters > div:has(.form-check) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.mail-composer .composer-filters .composer-filter-checkbox .form-group.row,
+.mail-composer .composer-filters .form-group.row:has(.form-check) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: flex-end;
+  margin: 0;
+}
+
+.mail-composer .composer-filters .composer-filter-checkbox .col-md-3,
+.mail-composer .composer-filters .form-group.row:has(.form-check) > .col-md-3:empty {
+  display: none;
+}
+
+.mail-composer .composer-filters .composer-filter-checkbox .col-md-9,
+.mail-composer .composer-filters .form-group.row:has(.form-check) > .col-md-9 {
+  align-items: center;
+  display: flex;
+  min-height: var(--composer-control-height, 40px);
+}
+
+.mail-composer .composer-filters .composer-filter-checkbox .form-check,
+.mail-composer .composer-filters .form-group.row:has(.form-check) .form-check {
+  align-items: center;
+  display: flex;
+  margin-bottom: 0;
+  min-height: var(--composer-control-height, 40px);
+}
+
+.mail-composer .composer-filters .composer-filter-checkbox input[type="checkbox"],
+.mail-composer .composer-filters .form-group.row:has(.form-check) input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.mail-composer .composer-filters .composer-filter-checkbox .form-check-label,
+.mail-composer .composer-filters .form-group.row:has(.form-check) .form-check-label {
+  align-items: center;
+  display: inline-flex;
+  font-size: var(--composer-font-size);
+  margin-bottom: 0;
+}
+
 .mail-composer button.mail-editor-mode-tab,
 .mail-composer .mail-editor-mode-tab {
   background-color: transparent;
