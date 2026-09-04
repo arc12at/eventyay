@@ -8,15 +8,15 @@
   background: #fff;
   min-height: 160px;
   position: relative;
-  z-index: 1050;
+  z-index: 10;
 }
 
 [data-tiptap-wrapper]:focus-within {
-  z-index: 1055;
+  z-index: 11;
 }
 
 [data-tiptap-wrapper]:has([aria-expanded="true"]) {
-  z-index: 1060;
+  z-index: 12;
 }
 
 /* ── Toolbar ─────────────────────────────────────────────────────────────── */
