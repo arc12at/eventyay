@@ -606,7 +606,7 @@ class EditEmailQueueView(EventPermissionRequiredMixin, UpdateView):
             message = form.cleaned_data['message']
 
             if form.instance.composing_for == ComposingFor.TEAMS:
-                base_placeholders = ['event', 'team']
+                base_placeholders = ['event', 'user', 'team']
             else:
                 base_placeholders = ['event', 'order', 'position_or_address']
 
@@ -893,7 +893,7 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
 
             try:
                 context_dict = build_email_preview_context(
-                    event, ['event', 'team']
+                    event, ['event', 'user', 'team']
                 )
 
                 mail(
@@ -923,7 +923,7 @@ class ComposeTeamsMail(EventPermissionRequiredMixin, CopyDraftMixin, BulkReplyTo
         self.output = {}
         for l in event.settings.locales:
             with language(l, event.settings.region):
-                context_dict = build_email_preview_context(event, ['event', 'team'])
+                context_dict = build_email_preview_context(event, ['event', 'user', 'team'])
 
                 try:
                     subject_preview = nh3.clean(

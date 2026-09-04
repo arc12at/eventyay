@@ -15,6 +15,7 @@ from i18nfield.forms import I18nFormField, I18nTextarea, I18nTextInput
 
 from eventyay.base.channels import get_all_sales_channels
 from eventyay.base.email import get_available_placeholders
+from eventyay.mail.context import get_available_placeholders as get_talk_placeholders
 from eventyay.base.forms import PlaceholderValidator, SettingsForm
 from eventyay.base.forms.widgets import SplitDateTimePickerWidget
 from eventyay.base.meetup import is_meetup_event
@@ -841,9 +842,13 @@ class EmailQueueEditForm(ScheduledAtValidationMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if self.instance.composing_for == ComposingFor.TEAMS:
-            base_placeholders = ['event', 'team']
+            base_placeholders = ['event', 'user', 'team']
+            base_ph = get_available_placeholders(self.event, base_placeholders)
+            talk_ph = get_talk_placeholders(self.event, base_placeholders)
+            placeholder_names = sorted({**base_ph, **talk_ph}.keys())
         else:
             base_placeholders = ['event', 'order', 'position_or_address']
+            placeholder_names = sorted(get_available_placeholders(self.event, base_placeholders).keys())
 
         existing_recipients = EmailQueueToUser.objects.filter(mail=self.instance).order_by('id')
         self.recipient_objects = list(existing_recipients)
@@ -865,7 +870,6 @@ class EmailQueueEditForm(ScheduledAtValidationMixin, forms.ModelForm):
             locales=list(allowed_locales),
             initial=self.instance.subject
         )
-        placeholder_names = sorted(get_available_placeholders(self.event, base_placeholders).keys())
         self.fields['text'] = I18nEmailBodyFormField(
             label=_('Message'),
             widget=I18nEmailEditorWidget,
@@ -880,7 +884,13 @@ class EmailQueueEditForm(ScheduledAtValidationMixin, forms.ModelForm):
             self._set_field_placeholders('text', base_placeholders)
 
     def _set_field_placeholders(self, fn, base_parameters):
-        phs = ['{%s}' % p for p in sorted(get_available_placeholders(self.event, base_parameters).keys())]
+        if self.instance.composing_for == ComposingFor.TEAMS:
+            base_ph = get_available_placeholders(self.event, base_parameters)
+            talk_ph = get_talk_placeholders(self.event, base_parameters)
+            all_ph = {**base_ph, **talk_ph}
+            phs = ['{%s}' % p for p in sorted(all_ph.keys())]
+        else:
+            phs = ['{%s}' % p for p in sorted(get_available_placeholders(self.event, base_parameters).keys())]
         ht = _('Available placeholders: {list}').format(list=', '.join(phs))
         if self.fields[fn].help_text:
             self.fields[fn].help_text += ' ' + str(ht)
@@ -959,8 +969,11 @@ class TeamMailForm(ScheduledAtValidationMixin, forms.Form):
         if isinstance(locales, str):
             locales = [locales]
 
-        team_placeholders = ['event', 'team']
-        placeholder_names = sorted(get_available_placeholders(self.event, team_placeholders).keys())
+        team_placeholders = ['event', 'user', 'team']
+        base_ph = get_available_placeholders(self.event, team_placeholders)
+        talk_ph = get_talk_placeholders(self.event, team_placeholders)
+        self.valid_placeholders = {**base_ph, **talk_ph}
+        placeholder_names = sorted(self.valid_placeholders.keys())
         placeholder_text = _("Available placeholders: ") + ', '.join(f"{{{key}}}" for key in placeholder_names)
 
         self.fields['subject'] = I18nFormField(
@@ -1038,9 +1051,6 @@ class TeamMailForm(ScheduledAtValidationMixin, forms.Form):
             required=False,
         )
         
-        # Helper properties for template
-        self.valid_placeholders = get_available_placeholders(self.event, team_placeholders)
-
         widget = SplitDateTimePickerWidget()
         widget.widgets[0].attrs['placeholder'] = ''
         widget.widgets[1].attrs['placeholder'] = ''
@@ -1060,6 +1070,7 @@ class TeamMailForm(ScheduledAtValidationMixin, forms.Form):
         placeholders = self.valid_placeholders
         grouped = defaultdict(list)
         specificity = (
+            ('user', 'user'),
             ('team', 'user'),
             ('event', 'event'),
         )

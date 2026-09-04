@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from i18nfield.fields import I18nTextField
 
 from eventyay.base.email import get_email_context
+from eventyay.mail.context import get_mail_context
 from eventyay.base.models.auth import User
 from eventyay.base.models.event import Event
 from eventyay.base.models.orders import InvoiceAddress, Order, OrderPosition
@@ -234,7 +235,10 @@ class EmailQueue(models.Model):
     def _build_email_context(self, order, position, position_or_address, recipient):
         try:
             if self.composing_for != ComposingFor.ATTENDEES:
-                return get_email_context(event=self.event)
+                user_obj = User.objects.filter(email__iexact=recipient.email).first()
+                ctx = get_email_context(event=self.event, user=user_obj)
+                ctx.update(get_mail_context(event=self.event, user=user_obj))
+                return ctx
 
             # Only pass keys that are present. ``position=None`` still counts as
             # provided to get_email_context and would break position placeholders.
