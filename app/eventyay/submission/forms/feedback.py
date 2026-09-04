@@ -116,6 +116,6 @@ class FeedbackForm(ReadOnlyFlag, forms.ModelForm):
                     (val, format_lazy('{emoji} {label}', emoji=emoji, label=label))
                     for val, (emoji, label) in Feedback.EMOJI_RATING_MAP.items()
                 ],
-                attrs={'class': 'emoji-rating-input'},
+                attrs={'class': 'emoji-rating-input emoji-rating-radio'},
             ),
         }
