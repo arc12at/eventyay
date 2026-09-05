@@ -38,6 +38,9 @@ from eventyay.base.meetup import (
     LOCATION_IN_PERSON,
     LOCATION_TYPE_CHOICES,
     LOCATION_VIRTUAL,
+    PRIVACY_CHOICES,
+    PRIVACY_PRIVATE,
+    PRIVACY_PUBLIC,
     REGISTRATION_FEE_CHOICES,
     REGISTRATION_FEE_FREE,
     REGISTRATION_FEE_PAID,
@@ -1959,6 +1962,13 @@ ConfirmTextFormset = formset_factory(
 class MeetupEventWizardBasicsForm(EventWizardBasicsForm):
     """Event basics for meetups: single-page quick-create form."""
 
+    privacy_type = forms.ChoiceField(
+        label=_('Visibility'),
+        choices=PRIVACY_CHOICES,
+        initial=PRIVACY_PUBLIC,
+        widget=forms.Select(attrs={'class': 'form-control meetup-privacy-select'}),
+        required=False,
+    )
     location_type = forms.ChoiceField(
         label=_('Location'),
         choices=LOCATION_TYPE_CHOICES,
@@ -2160,5 +2170,7 @@ class MeetupEventWizardBasicsForm(EventWizardBasicsForm):
                 self.add_error('payment_stripe_secret_key', _('Please enter your Stripe secret key.'))
             if not cleaned_data.get('payment_stripe_merchant_country'):
                 self.add_error('payment_stripe_merchant_country', _('Please select your Stripe merchant country.'))
+
+        cleaned_data['privacy_type'] = cleaned_data.get('privacy_type') or PRIVACY_PUBLIC
 
         return cleaned_data
