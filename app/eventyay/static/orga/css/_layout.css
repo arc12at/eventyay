@@ -3546,6 +3546,7 @@ button.btn-speaker-not-arrived {
   align-items: center;
   justify-content: flex-end;
   gap: 0.5rem;
+  min-width: 220px;
 }
 
 .feedback-table-actions .btn {
