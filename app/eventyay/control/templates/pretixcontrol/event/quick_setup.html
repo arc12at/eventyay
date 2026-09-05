@@ -6,7 +6,7 @@
 {% block title %}{% trans "Ticketing Quickstart" %} :: {{ request.event.name }}{% endblock %}
 {% block custom_header %}
     {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="{% static "pretixcontrol/css/quicksetup.css" %}" />
+    <link rel="stylesheet" type="text/css" href="{% static "pretixcontrol/css/quicksetup.css" %}?v=2" />
 {% endblock %}
 {% block content %}
 <form action="" method="post" class="form-horizontal" id="quickstart-form">
@@ -30,27 +30,27 @@
         <div class="quickstart-stepper">
             <a href="#step-currency" class="quickstart-step-item active" data-step="1">
                 <span class="step-badge">1</span>
-                <span class="step-label">{% trans "Currency" %}</span>
+                <span class="step-label">{% trans "Currency" %}<span class="step-badge-tag required">{% trans "Required" %}</span></span>
             </a>
             <a href="#step-tickets" class="quickstart-step-item" data-step="2">
                 <span class="step-badge">2</span>
-                <span class="step-label">{% trans "Ticket types" %}</span>
+                <span class="step-label">{% trans "Ticket types" %}<span class="step-badge-tag required">{% trans "Required" %}</span></span>
             </a>
             <a href="#step-checkout" class="quickstart-step-item" data-step="3">
                 <span class="step-badge">3</span>
-                <span class="step-label">{% trans "Checkout" %}</span>
+                <span class="step-label">{% trans "Checkout" %}<span class="step-badge-tag optional">{% trans "Optional" %}</span></span>
             </a>
             <a href="#step-features" class="quickstart-step-item" data-step="4">
                 <span class="step-badge">4</span>
-                <span class="step-label">{% trans "Features" %}</span>
+                <span class="step-label">{% trans "Features" %}<span class="step-badge-tag optional">{% trans "Optional" %}</span></span>
             </a>
             <a href="#step-payment" class="quickstart-step-item" data-step="5">
                 <span class="step-badge">5</span>
-                <span class="step-label">{% trans "Payment" %}</span>
+                <span class="step-label">{% trans "Payment" %}<span class="step-badge-tag conditional" id="step-tag-payment">{% trans "Conditional" %}</span></span>
             </a>
             <a href="#step-review" class="quickstart-step-item" data-step="6">
                 <span class="step-badge">6</span>
-                <span class="step-label">{% trans "Review" %}</span>
+                <span class="step-label">{% trans "Review" %}<span class="step-badge-tag optional">{% trans "Summary" %}</span></span>
             </a>
         </div>
 
@@ -59,14 +59,15 @@
             <div class="quickstart-card-header">
                 <span class="card-step-num">1</span>
                 <h3 class="card-title">{% trans "Currency" %}</h3>
+                <span class="card-step-tag tag-required">{% trans "Required" %}</span>
             </div>
             <div class="quickstart-card-desc">
                 {% trans "Choose the currency used for ticket prices, orders, invoices, and payments." %}
             </div>
             <div class="quickstart-card-body">
-                <div class="form-group">
-                    <label class="control-label col-md-3" for="id_currency">{% trans "Event currency" %}</label>
-                    <div class="col-md-9">
+                <div class="currency-form-group">
+                    <label class="currency-label" for="id_currency">{% trans "Event currency" %}</label>
+                    <div class="currency-select-wrapper">
                         {% bootstrap_field form.currency layout="inline" form_group_class="" %}
                     </div>
                 </div>
@@ -82,6 +83,7 @@
             <div class="quickstart-card-header">
                 <span class="card-step-num">2</span>
                 <h3 class="card-title">{% trans "Ticket types" %}</h3>
+                <span class="card-step-tag tag-required">{% trans "Required" %}</span>
             </div>
             <div class="quickstart-card-desc">
                 {% trans "Add the ticket types you want to sell for this event." %}
@@ -95,7 +97,6 @@
                         <table class="table quickstart-table">
                             <thead>
                                 <tr>
-                                    <th class="col-drag"></th>
                                     <th class="col-name">{% trans "Ticket type" %}</th>
                                     <th class="col-price">{% trans "Price" %}</th>
                                     <th class="col-capacity">{% trans "Capacity" %}</th>
@@ -107,14 +108,11 @@
                                 {% with currency_code=form.currency.value|default:request.event.currency %}
                                 {% for iform in formset %}
                                     <tr data-formset-form class="ticket-row">
-                                        <td class="col-drag">
-                                            <i class="fa fa-ellipsis-v"></i><i class="fa fa-ellipsis-v" style="margin-left: 2px;"></i>
+                                        <td class="col-name">
                                             <div class="sr-only">
                                                 {{ iform.id }}
                                                 {% bootstrap_field iform.DELETE form_group_class="" layout="inline" %}
                                             </div>
-                                        </td>
-                                        <td class="col-name">
                                             {% bootstrap_form_errors iform %}
                                             {% bootstrap_field iform.name layout='inline' form_group_class="" %}
                                         </td>
@@ -150,14 +148,11 @@
                         {% escapescript %}
                             {% with currency_code=form.currency.value|default:request.event.currency %}
                             <tr data-formset-form class="ticket-row">
-                                <td class="col-drag">
-                                    <i class="fa fa-ellipsis-v"></i><i class="fa fa-ellipsis-v" style="margin-left: 2px;"></i>
+                                <td class="col-name">
                                     <div class="sr-only">
                                         {{ formset.empty_form.id }}
                                         {% bootstrap_field formset.empty_form.DELETE form_group_class="" layout="inline" %}
                                     </div>
-                                </td>
-                                <td class="col-name">
                                     {% bootstrap_field formset.empty_form.name layout='inline' form_group_class="" %}
                                 </td>
                                 <td class="col-price">
@@ -216,6 +211,7 @@
             <div class="quickstart-card-header">
                 <span class="card-step-num">3</span>
                 <h3 class="card-title">{% trans "Checkout access" %}</h3>
+                <span class="card-step-tag tag-optional">{% trans "Optional" %}</span>
             </div>
             <div class="quickstart-card-desc">
                 {% trans "Choose who can complete an order." %}
@@ -238,6 +234,7 @@
             <div class="quickstart-card-header">
                 <span class="card-step-num">4</span>
                 <h3 class="card-title">{% trans "Ticket features" %}</h3>
+                <span class="card-step-tag tag-optional">{% trans "Optional" %}</span>
             </div>
             <div class="quickstart-card-desc">
                 {% trans "Enable features to improve the experience for your attendees." %}
@@ -290,190 +287,182 @@
             </div>
         </div>
 
-        <!-- Bottom Row: Section 5 Payment & Section 6 Review summary -->
-        <div class="row">
-            <!-- Section 5: Payment -->
-            <div class="col-md-7">
-                <div class="quickstart-card" id="step-payment">
-                    <div class="quickstart-card-header">
-                        <span class="card-step-num">5</span>
-                        <h3 class="card-title">{% trans "Payment" %}</h3>
-                    </div>
-                    <div class="quickstart-card-desc">
-                        {% trans "Select how you want to receive payments for paid tickets." %}
-                    </div>
-                    <div class="quickstart-card-body">
-                        <!-- Free tickets state -->
-                        <div id="payment-free-state" class="payment-free-state">
-                            <div class="payment-free-title">{% trans "No payment provider needed" %}</div>
-                            <p class="payment-free-desc">{% trans "All current ticket types are free." %}</p>
-                        </div>
+        <!-- Section 5: Payment -->
+        <div class="quickstart-card" id="step-payment">
+            <div class="quickstart-card-header">
+                <span class="card-step-num">5</span>
+                <h3 class="card-title">{% trans "Payment" %}</h3>
+                <span class="card-step-tag tag-conditional" id="card-payment-tag">{% trans "Required for paid tickets" %}</span>
+            </div>
+            <div class="quickstart-card-desc">
+                {% trans "Select how you want to receive payments for paid tickets." %}
+            </div>
+            <div class="quickstart-card-body">
+                <!-- Free tickets state -->
+                <div id="payment-free-state" class="payment-free-state">
+                    <div class="payment-free-title">{% trans "No payment provider needed" %}</div>
+                    <p class="payment-free-desc">{% trans "All current ticket types are free." %}</p>
+                </div>
 
-                        <!-- Paid tickets state -->
-                        <div id="payment-methods-selection">
-                            <div class="payment-methods-grid">
-                                {% if form.payment_banktransfer__enabled %}
-                                    <div class="payment-tile {% if form.payment_banktransfer__enabled.value %}selected{% endif %}" data-target="#id_payment_banktransfer__enabled">
-                                        <div class="tile-header">
-                                            <i class="fa fa-university tile-icon"></i>
-                                            <input type="checkbox" name="payment_banktransfer__enabled" id="id_payment_banktransfer__enabled" {% if form.payment_banktransfer__enabled.value %}checked{% endif %}>
-                                        </div>
-                                        <div class="tile-title">{% trans "Bank transfer" %}</div>
-                                        <p class="tile-desc">{% trans "Attendees will receive bank details to complete the transfer." %}</p>
-                                    </div>
-                                {% endif %}
-
-                                {% if form.payment_manualpayment__enabled %}
-                                    <div class="payment-tile {% if form.payment_manualpayment__enabled.value %}selected{% endif %}" data-target="#id_payment_manualpayment__enabled">
-                                        <div class="tile-header">
-                                            <i class="fa fa-money tile-icon"></i>
-                                            <input type="checkbox" name="payment_manualpayment__enabled" id="id_payment_manualpayment__enabled" {% if form.payment_manualpayment__enabled.value %}checked{% endif %}>
-                                        </div>
-                                        <div class="tile-title">{% trans "Manual payment" %}</div>
-                                        <p class="tile-desc">{% trans "You will mark orders as paid manually after receiving payment." %}</p>
-                                    </div>
-                                {% endif %}
-
-                                {% if form.payment_stripe__enabled %}
-                                    <div class="payment-tile {% if form.payment_stripe__enabled.value %}selected{% endif %}" data-target="#id_payment_stripe__enabled">
-                                        <div class="tile-header">
-                                            <i class="fa fa-cc-stripe tile-icon"></i>
-                                            <input type="checkbox" name="payment_stripe__enabled" id="id_payment_stripe__enabled" {% if form.payment_stripe__enabled.value %}checked{% endif %}>
-                                        </div>
-                                        <div class="tile-title">{% trans "Stripe" %}</div>
-                                        <p class="tile-desc">{% trans "Accept credit cards and online payment methods via Stripe." %}</p>
-                                    </div>
-                                {% endif %}
-
-                                {% if form.payment_paypal__enabled %}
-                                    <div class="payment-tile {% if form.payment_paypal__enabled.value %}selected{% endif %}" data-target="#id_payment_paypal__enabled">
-                                        <div class="tile-header">
-                                            <i class="fa fa-paypal tile-icon"></i>
-                                            <input type="checkbox" name="payment_paypal__enabled" id="id_payment_paypal__enabled" {% if form.payment_paypal__enabled.value %}checked{% endif %}>
-                                        </div>
-                                        <div class="tile-title">{% trans "PayPal" %}</div>
-                                        <p class="tile-desc">{% trans "Accept payments from PayPal account holders." %}</p>
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- Expandable bank details -->
-                            {% if form.payment_banktransfer__enabled %}
-                                <div id="banktransfer-details-box" class="payment-details-box" {% if not form.payment_banktransfer__enabled.value %}style="display: none;"{% endif %}>
-                                    <h5 style="margin-top: 0; margin-bottom: 12px; font-weight: 600;">{% trans "Bank transfer details" %}</h5>
-                                    {% bootstrap_field form.payment_banktransfer_bank_details_type layout="control" %}
-                                    {% bootstrap_field form.payment_banktransfer_bank_details_sepa_name layout="control" %}
-                                    {% bootstrap_field form.payment_banktransfer_bank_details_sepa_iban layout="control" %}
-                                    {% bootstrap_field form.payment_banktransfer_bank_details_sepa_bic layout="control" %}
-                                    {% bootstrap_field form.payment_banktransfer_bank_details_sepa_bank layout="control" %}
-                                    {% bootstrap_field form.payment_banktransfer_bank_details layout="control" %}
+                <!-- Paid tickets state -->
+                <div id="payment-methods-selection">
+                    <div class="payment-methods-grid">
+                        {% if form.payment_banktransfer__enabled %}
+                            <div class="payment-tile {% if form.payment_banktransfer__enabled.value %}selected{% endif %}" data-target="#id_payment_banktransfer__enabled">
+                                <div class="tile-header">
+                                    <i class="fa fa-university tile-icon"></i>
+                                    <input type="checkbox" name="payment_banktransfer__enabled" id="id_payment_banktransfer__enabled" {% if form.payment_banktransfer__enabled.value %}checked{% endif %}>
                                 </div>
-                            {% endif %}
-
-                            <div class="payment-helper-link">
-                                <i class="fa fa-info-circle"></i>
-                                <span>
-                                    {% url 'control:event.settings.payment' organizer=request.event.organizer.slug event=request.event.slug as payment_url %}
-                                    {% blocktrans trimmed with payment_url=payment_url %}
-                                        More payment providers are available in <a href="{{ payment_url }}">Ticket settings &rarr; Payment</a>.
-                                    {% endblocktrans %}
-                                </span>
+                                <div class="tile-title">{% trans "Bank transfer" %}</div>
+                                <p class="tile-desc">{% trans "Attendees will receive bank details to complete the transfer." %}</p>
                             </div>
+                        {% endif %}
+
+                        {% if form.payment_manualpayment__enabled %}
+                            <div class="payment-tile {% if form.payment_manualpayment__enabled.value %}selected{% endif %}" data-target="#id_payment_manualpayment__enabled">
+                                <div class="tile-header">
+                                    <i class="fa fa-money tile-icon"></i>
+                                    <input type="checkbox" name="payment_manualpayment__enabled" id="id_payment_manualpayment__enabled" {% if form.payment_manualpayment__enabled.value %}checked{% endif %}>
+                                </div>
+                                <div class="tile-title">{% trans "Manual payment" %}</div>
+                                <p class="tile-desc">{% trans "You will mark orders as paid manually after receiving payment." %}</p>
+                            </div>
+                        {% endif %}
+
+                        {% if form.payment_stripe__enabled %}
+                            <div class="payment-tile {% if form.payment_stripe__enabled.value %}selected{% endif %}" data-target="#id_payment_stripe__enabled">
+                                <div class="tile-header">
+                                    <i class="fa fa-cc-stripe tile-icon"></i>
+                                    <input type="checkbox" name="payment_stripe__enabled" id="id_payment_stripe__enabled" {% if form.payment_stripe__enabled.value %}checked{% endif %}>
+                                </div>
+                                <div class="tile-title">{% trans "Stripe" %}</div>
+                                <p class="tile-desc">{% trans "Accept credit cards and online payment methods via Stripe." %}</p>
+                            </div>
+                        {% endif %}
+
+                        {% if form.payment_paypal__enabled %}
+                            <div class="payment-tile {% if form.payment_paypal__enabled.value %}selected{% endif %}" data-target="#id_payment_paypal__enabled">
+                                <div class="tile-header">
+                                    <i class="fa fa-paypal tile-icon"></i>
+                                    <input type="checkbox" name="payment_paypal__enabled" id="id_payment_paypal__enabled" {% if form.payment_paypal__enabled.value %}checked{% endif %}>
+                                </div>
+                                <div class="tile-title">{% trans "PayPal" %}</div>
+                                <p class="tile-desc">{% trans "Accept payments from PayPal account holders." %}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Expandable bank details -->
+                    {% if form.payment_banktransfer__enabled %}
+                        <div id="banktransfer-details-box" class="payment-details-box{% if not form.payment_banktransfer__enabled.value %} is-hidden{% endif %}">
+                            <h5 class="payment-details-title">{% trans "Bank transfer details" %}</h5>
+                            {% bootstrap_field form.payment_banktransfer_bank_details_type layout="control" %}
+                            {% bootstrap_field form.payment_banktransfer_bank_details_sepa_name layout="control" %}
+                            {% bootstrap_field form.payment_banktransfer_bank_details_sepa_iban layout="control" %}
+                            {% bootstrap_field form.payment_banktransfer_bank_details_sepa_bic layout="control" %}
+                            {% bootstrap_field form.payment_banktransfer_bank_details_sepa_bank layout="control" %}
+                            {% bootstrap_field form.payment_banktransfer_bank_details layout="control" %}
                         </div>
+                    {% endif %}
+
+                    <div class="payment-helper-link">
+                        <i class="fa fa-info-circle"></i>
+                        <span>
+                            {% url 'control:event.settings.payment' organizer=request.event.organizer.slug event=request.event.slug as payment_url %}
+                            {% blocktrans trimmed with payment_url=payment_url %}
+                                More payment providers are available in <a href="{{ payment_url }}">Ticket settings &rarr; Payment</a>.
+                            {% endblocktrans %}
+                        </span>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Section 6: Review summary -->
-            <div class="col-md-5">
-                <div class="quickstart-card review-summary-card" id="step-review">
-                    <div class="quickstart-card-header">
-                        <span class="card-step-num">6</span>
-                        <h3 class="card-title">{% trans "Review summary" %}</h3>
-                    </div>
-                    <div class="quickstart-card-desc">
-                        {% trans "Review your basic ticket setup before saving." %}
-                    </div>
-                    <div class="quickstart-card-body">
-                        <div id="review-status-box" class="review-status-box">
-                            {% if form.errors or formset.errors %}
-                                <div class="review-status-warning server-errors">
-                                    <div class="status-warning-title">
-                                        <i class="fa fa-exclamation-circle"></i>
-                                        <strong>{% trans "Missing required configuration or errors:" %}</strong>
-                                    </div>
-                                    <ul class="review-missing-list">
-                                        {% for error in form.non_field_errors %}
-                                            <li>{{ error }}</li>
+        <!-- Section 6: Review summary -->
+        <div class="quickstart-card review-summary-card" id="step-review">
+            <div class="quickstart-card-header">
+                <span class="card-step-num">6</span>
+                <h3 class="card-title">{% trans "Review summary" %}</h3>
+                <span class="card-step-tag tag-optional">{% trans "Summary" %}</span>
+            </div>
+            <div class="quickstart-card-desc">
+                {% trans "Review your basic ticket setup before saving." %}
+            </div>
+            <div class="quickstart-card-body">
+                <div id="review-status-box" class="review-status-box">
+                    {% if form.errors or formset.errors %}
+                        <div class="review-status-warning server-errors">
+                            <div class="status-warning-title">
+                                <i class="fa fa-exclamation-circle"></i>
+                                <strong>{% trans "Missing required configuration or errors:" %}</strong>
+                            </div>
+                            <ul class="review-missing-list">
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for f in formset %}
+                                    {% for error in f.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                    {% for field in f %}
+                                        {% for error in field.errors %}
+                                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
                                         {% endfor %}
-                                        {% for field in form %}
-                                            {% for error in field.errors %}
-                                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                                            {% endfor %}
-                                        {% endfor %}
-                                        {% for f in formset %}
-                                            {% for error in f.non_field_errors %}
-                                                <li>{{ error }}</li>
-                                            {% endfor %}
-                                            {% for field in f %}
-                                                {% for error in field.errors %}
-                                                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                                                {% endfor %}
-                                            {% endfor %}
-                                        {% endfor %}
-                                    </ul>
-                                </div>
-                            {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
                         </div>
-                        <ul class="review-summary-list">
-                            <li class="review-item">
-                                <span class="review-label"><i class="fa fa-globe"></i> {% trans "Currency" %}</span>
-                                <span class="review-value" id="review-currency">{{ form.currency.value|default:request.event.currency }}</span>
-                            </li>
-                            <li class="review-item">
-                                <span class="review-label"><i class="fa fa-ticket"></i> {% trans "Ticket types" %}</span>
-                                <div class="review-item-right">
-                                    <span class="review-value" id="review-ticket-types">0</span>
-                                    <span id="review-ticket-types-missing" class="review-badge-missing" style="display: none;">{% trans "Required" %}</span>
-                                </div>
-                            </li>
-                            <li class="review-item">
-                                <span class="review-label"><i class="fa fa-users"></i> {% trans "Total capacity" %}</span>
-                                <span class="review-value" id="review-total-capacity">0</span>
-                            </li>
-                            <li class="review-item">
-                                <span class="review-label"><i class="fa fa-usd"></i> {% trans "Paid tickets" %}</span>
-                                <span class="review-value" id="review-paid-tickets">0</span>
-                            </li>
-                            <li class="review-item">
-                                <span class="review-label"><i class="fa fa-tag"></i> {% trans "Free tickets" %}</span>
-                                <span class="review-value" id="review-free-tickets">0</span>
-                            </li>
-                            <li class="review-item">
-                                <span class="review-label"><i class="fa fa-user"></i> {% trans "Login required" %}</span>
-                                <span class="review-value" id="review-login-required">{% if form.require_registered_account_for_tickets.value %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</span>
-                            </li>
-                            <li class="review-item">
-                                <span class="review-label"><i class="fa fa-list-ol"></i> {% trans "Waiting list" %}</span>
-                                <span class="review-value" id="review-waiting-list">{% if form.waiting_list_enabled.value %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span>
-                            </li>
-                            <li class="review-item">
-                                <span class="review-label"><i class="fa fa-download"></i> {% trans "Ticket downloads" %}</span>
-                                <span class="review-value" id="review-ticket-downloads">{% if form.ticket_download.value %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span>
-                            </li>
-                            <li class="review-item">
-                                <span class="review-label"><i class="fa fa-credit-card"></i> {% trans "Payment methods" %}</span>
-                                <div class="review-item-right">
-                                    <span class="review-value" id="review-payment-methods">{% trans "None selected" %}</span>
-                                    <span id="review-payment-missing" class="review-badge-missing" style="display: none;">{% trans "Required" %}</span>
-                                </div>
-                            </li>
-                        </ul>
-                        <button type="button" class="btn btn-edit-setup" id="btn-edit-setup">
-                            {% trans "Edit setup" %}
-                        </button>
-                    </div>
+                    {% endif %}
                 </div>
+                <ul class="review-summary-list">
+                    <li class="review-item">
+                        <span class="review-label"><i class="fa fa-globe"></i> {% trans "Currency" %}</span>
+                        <span class="review-value" id="review-currency">{{ form.currency.value|default:request.event.currency }}</span>
+                    </li>
+                    <li class="review-item">
+                        <span class="review-label"><i class="fa fa-ticket"></i> {% trans "Ticket types" %}</span>
+                        <div class="review-item-right">
+                            <span class="review-value" id="review-ticket-types">0</span>
+                            <span id="review-ticket-types-missing" class="review-badge-missing">{% trans "Required" %}</span>
+                        </div>
+                    </li>
+                    <li class="review-item">
+                        <span class="review-label"><i class="fa fa-users"></i> {% trans "Total capacity" %}</span>
+                        <span class="review-value" id="review-total-capacity">0</span>
+                    </li>
+                    <li class="review-item">
+                        <span class="review-label"><i class="fa fa-usd"></i> {% trans "Paid tickets" %}</span>
+                        <span class="review-value" id="review-paid-tickets">0</span>
+                    </li>
+                    <li class="review-item">
+                        <span class="review-label"><i class="fa fa-tag"></i> {% trans "Free tickets" %}</span>
+                        <span class="review-value" id="review-free-tickets">0</span>
+                    </li>
+                    <li class="review-item">
+                        <span class="review-label"><i class="fa fa-user"></i> {% trans "Login required" %}</span>
+                        <span class="review-value" id="review-login-required">{% if form.require_registered_account_for_tickets.value %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</span>
+                    </li>
+                    <li class="review-item">
+                        <span class="review-label"><i class="fa fa-list-ol"></i> {% trans "Waiting list" %}</span>
+                        <span class="review-value" id="review-waiting-list">{% if form.waiting_list_enabled.value %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span>
+                    </li>
+                    <li class="review-item">
+                        <span class="review-label"><i class="fa fa-download"></i> {% trans "Ticket downloads" %}</span>
+                        <span class="review-value" id="review-ticket-downloads">{% if form.ticket_download.value %}{% trans "Enabled" %}{% else %}{% trans "Disabled" %}{% endif %}</span>
+                    </li>
+                    <li class="review-item">
+                        <span class="review-label"><i class="fa fa-credit-card"></i> {% trans "Payment methods" %}</span>
+                        <div class="review-item-right">
+                            <span class="review-value" id="review-payment-methods">{% trans "None selected" %}</span>
+                            <span id="review-payment-missing" class="review-badge-missing">{% trans "Required" %}</span>
+                        </div>
+                    </li>
+                </ul>
             </div>
         </div>
 

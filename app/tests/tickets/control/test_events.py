@@ -159,9 +159,12 @@ class EventsTest(SoupTest):
         doc.select('[name=form-0-default_price]')[0]['value'] = '13.90'
         doc.select('[name=form-0-quota]')[0]['value'] = '100'
 
+        fields = extract_form_fields(doc.select('.container-fluid form')[0])
+        fields['action'] = 'continue'
+        fields['payment_manualpayment__enabled'] = 'on'
         doc = self.post_doc(
             '/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug),
-            extract_form_fields(doc.select('.container-fluid form')[0]),
+            fields,
         )
         assert len(doc.select('.alert-success')) > 0
         with scopes_disabled():
@@ -342,6 +345,9 @@ class EventsTest(SoupTest):
         )
         assert response.status_code == 302
         assert response['Location'] == '/control/event/%s/%s/' % (self.orga1.slug, self.event1.slug)
+        with scopes_disabled():
+            assert self.event1.products.count() == 0
+        assert self.event1.settings.get('quickstart_draft') is not None
 
     def test_quick_setup_save_draft_bypasses_optional_sections(self):
         doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))
@@ -367,9 +373,10 @@ class EventsTest(SoupTest):
         assert any('draft' in alert.text.lower() for alert in doc.select('.alert-success'))
         self.event1.refresh_from_db()
         with scopes_disabled():
-            assert self.event1.products.count() == 1
-            item = self.event1.products.first()
-            assert str(item.name) == 'Draft Paid Ticket'
+            assert self.event1.products.count() == 0
+        draft_data = json.loads(self.event1.settings.get('quickstart_draft'))
+        assert len(draft_data['tickets']) == 1
+        assert draft_data['tickets'][0]['name'] == 'Draft Paid Ticket'
 
     def test_quick_setup_save_continue_requires_bank_details(self):
         doc = self.get_doc('/control/event/%s/%s/quickstart/' % (self.orga1.slug, self.event1.slug))

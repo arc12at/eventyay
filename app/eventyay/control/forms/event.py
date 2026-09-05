@@ -1883,6 +1883,7 @@ class QuickSetupProductForm(I18nForm):
         max_length=200,  # Max length of Quota.name
         label=_('Product name'),
         widget=I18nTextInput,
+        widget_kwargs={'attrs': {'placeholder': _('Ticket name')}},
     )
     default_price = forms.DecimalField(
         label=_('Price (optional)'),

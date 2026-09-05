@@ -5,6 +5,72 @@ $(function () {
         var currency = $("#id_currency").val() || "";
         $(".currency-addon").text(currency);
         $("#review-currency").text(currency);
+        update_step_completion();
+    };
+
+    var set_step_completed = function (step_num, is_done) {
+        var $item = $('.quickstart-step-item[data-step="' + step_num + '"]');
+        if (is_done) {
+            $item.addClass("completed");
+        } else {
+            $item.removeClass("completed");
+        }
+    };
+
+    var update_step_completion = function () {
+        // Step 1: Currency selected
+        var currency = ($("#id_currency").val() || "").trim();
+        set_step_completed(1, currency !== "");
+
+        // Step 2: At least 1 ticket type with a name
+        var named_tickets = 0;
+        $("#ticket-type-formset [data-formset-form]").each(function () {
+            var $row = $(this);
+            var is_deleted = $row.find("input[name$=DELETE]").prop("checked");
+            if (is_deleted || $row.css("display") === "none") {
+                return;
+            }
+            var name_val = ($row.find("input[name*='name']").val() || "").trim();
+            if (name_val) {
+                named_tickets += 1;
+            }
+        });
+        set_step_completed(2, named_tickets > 0);
+
+        // Step 3: Checkout access (completed only when option is selected)
+        var step3_selected = $("#id_require_registered_account_for_tickets").is(":checked");
+        set_step_completed(3, step3_selected);
+
+        // Step 4: Features (completed only when at least one feature is selected)
+        var step4_selected = $("#id_ticket_download").is(":checked") ||
+                             $("#id_waiting_list_enabled").is(":checked") ||
+                             $("#id_show_quota_left").is(":checked") ||
+                             $("#id_attendee_names_required").is(":checked");
+        set_step_completed(4, step4_selected);
+
+        // Step 5: Payment
+        var paid_tickets = parseInt($("#review-paid-tickets").text(), 10) || 0;
+        var selected_methods_count = 0;
+        if ($("#id_payment_banktransfer__enabled").is(":checked")) selected_methods_count++;
+        if ($("#id_payment_manualpayment__enabled").is(":checked")) selected_methods_count++;
+        if ($("#id_payment_stripe__enabled").is(":checked")) selected_methods_count++;
+        if ($("#id_payment_paypal__enabled").is(":checked")) selected_methods_count++;
+
+        if (paid_tickets === 0) {
+            $("#step-tag-payment").text(gettext("Optional")).removeClass("required").addClass("optional");
+            $("#card-payment-tag").text(gettext("Not required (Free tickets)")).removeClass("tag-required").addClass("tag-optional");
+            set_step_completed(5, selected_methods_count > 0);
+        } else {
+            $("#step-tag-payment").text(gettext("Required")).removeClass("optional").addClass("required");
+            $("#card-payment-tag").text(gettext("Required for paid tickets")).removeClass("tag-optional").addClass("tag-required");
+            set_step_completed(5, selected_methods_count > 0);
+        }
+
+        // Step 6: Review - Complete if all required steps (1, 2, 5) are done
+        var step1_done = currency !== "";
+        var step2_done = named_tickets > 0;
+        var step5_done = (paid_tickets === 0) || (selected_methods_count > 0);
+        set_step_completed(6, step1_done && step2_done && step5_done);
     };
 
     var update_tickets_and_capacity = function () {
@@ -71,6 +137,7 @@ $(function () {
         }
 
         update_review_summary();
+        update_step_completion();
     };
 
     var update_review_summary = function () {
@@ -165,6 +232,33 @@ $(function () {
         }
     };
 
+    var update_active_step_on_scroll = function () {
+        var scroll_pos = $(window).scrollTop() + 160;
+        var current_step = 1;
+        var steps = [
+            { num: 1, id: "#step-currency" },
+            { num: 2, id: "#step-tickets" },
+            { num: 3, id: "#step-checkout" },
+            { num: 4, id: "#step-features" },
+            { num: 5, id: "#step-payment" },
+            { num: 6, id: "#step-review" }
+        ];
+
+        for (var i = 0; i < steps.length; i++) {
+            var $el = $(steps[i].id);
+            if ($el.length && $el.offset().top <= scroll_pos) {
+                current_step = steps[i].num;
+            }
+        }
+
+        $(".quickstart-step-item").removeClass("active");
+        $('.quickstart-step-item[data-step="' + current_step + '"]').addClass("active");
+    };
+
+    $(window).on("scroll resize", function () {
+        update_active_step_on_scroll();
+    });
+
     // Currency change
     $("#id_currency").on("change", function () {
         update_currency();
@@ -176,7 +270,15 @@ $(function () {
     });
 
     // Formset row added or deleted
-    $("[data-formset]").on("formAdded", function (e) {
+    $("[data-formset]").on("formAdded", function (e, target) {
+        var $new_row = $(target);
+        if ($new_row.length) {
+            $new_row.find("input[name*='name']").each(function () {
+                if (!$(this).attr("placeholder") || $(this).attr("placeholder") === "English") {
+                    $(this).attr("placeholder", gettext("Ticket name"));
+                }
+            });
+        }
         update_currency();
         update_tickets_and_capacity();
     });
@@ -188,6 +290,7 @@ $(function () {
     // Feature and checkout checkboxes change
     $("#id_require_registered_account_for_tickets, #id_waiting_list_enabled, #id_ticket_download, #id_show_quota_left, #id_attendee_names_required").on("change", function () {
         update_review_summary();
+        update_step_completion();
     });
 
     // Payment tile clicks
@@ -209,14 +312,18 @@ $(function () {
 
         // Toggle bank transfer details if applicable
         if ($(this).attr("id") === "id_payment_banktransfer__enabled") {
+            var $box = $("#banktransfer-details-box");
             if ($(this).is(":checked")) {
-                $("#banktransfer-details-box").slideDown();
+                $box.removeClass("is-hidden").slideDown();
             } else {
-                $("#banktransfer-details-box").slideUp();
+                $box.slideUp(function () {
+                    $(this).addClass("is-hidden");
+                });
             }
         }
 
         update_review_summary();
+        update_step_completion();
     });
 
     // Total capacity override toggle
@@ -252,14 +359,20 @@ $(function () {
         }
     });
 
-    // Edit setup button scrolls to top/step-currency
-    $("#btn-edit-setup").on("click", function (e) {
-        e.preventDefault();
-        $(".quickstart-step-item").removeClass("active");
-        $('.quickstart-step-item[data-step="1"]').addClass("active");
-        $("html, body").animate({
-            scrollTop: $("#step-currency").offset().top - 80
-        }, 300);
+    // Smooth scroll for missing configuration links and in-page step links
+    $(document).on("click", ".review-missing-list a, .quickstart-wizard-container a[href^='#step-']", function (e) {
+        var target = $(this).attr("href");
+        var $target = $(target);
+        if ($target.length) {
+            e.preventDefault();
+            $("html, body").animate({
+                scrollTop: $target.offset().top - 80
+            }, 300);
+            $target.addClass("highlight-pulse");
+            setTimeout(function () {
+                $target.removeClass("highlight-pulse");
+            }, 1200);
+        }
     });
 
     // If total capacity is already set, show input field
@@ -269,8 +382,17 @@ $(function () {
         $("#total-capacity-edit").hide();
     }
 
+    // Ensure placeholders don't say English
+    $("#ticket-type-formset input[name*='name']").each(function () {
+        if (!$(this).attr("placeholder") || $(this).attr("placeholder") === "English") {
+            $(this).attr("placeholder", gettext("Ticket name"));
+        }
+    });
+
     // Initialize state on page load
     update_currency();
     update_tickets_and_capacity();
     update_review_summary();
+    update_step_completion();
+    update_active_step_on_scroll();
 });

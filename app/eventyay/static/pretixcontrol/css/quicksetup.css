@@ -1,7 +1,8 @@
 .quickstart-wizard-container {
-  max-width: 1040px;
-  margin: 0 auto 80px auto;
-  padding: 10px 15px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 60px 0;
+  padding: 10px 0;
 }
 
 .quickstart-wizard-container .quickstart-header {
@@ -22,30 +23,30 @@
   margin: 0 0 6px 0;
   font-size: 24px;
   font-weight: 600;
-  color: #1e293b;
+  color: #222222;
 }
 
 .quickstart-wizard-container .quickstart-header .quickstart-header-text p {
   margin: 0;
-  color: #64748b;
+  color: #222222;
   font-size: 14px;
 }
 
 .quickstart-wizard-container .quickstart-header .quickstart-header-actions .btn-skip {
   background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #475569;
+  border: 1px solid var(--color-border, #ced4da);
+  color: #222222;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 8px 16px;
   transition: all 0.15s ease-in-out;
 }
 
 .quickstart-wizard-container .quickstart-header .quickstart-header-actions .btn-skip:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #1e293b;
+  background: var(--color-grey-ultralight, #f8f8f8);
+  border-color: #adb5bd;
+  color: #000000;
   text-decoration: none;
 }
 
@@ -60,11 +61,11 @@
 .quickstart-wizard-container .quickstart-stepper::before {
   content: '';
   position: absolute;
-  top: 15px;
+  top: 16px;
   left: 45px;
   right: 45px;
   height: 2px;
-  background: #e2e8f0;
+  background: var(--color-border, #ced4da);
   z-index: 1;
 }
 
@@ -80,8 +81,8 @@
 }
 
 .quickstart-wizard-container .quickstart-stepper .quickstart-step-item .step-badge {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -89,8 +90,8 @@
   font-weight: 600;
   font-size: 14px;
   background: #ffffff;
-  border: 2px solid #cbd5e1;
-  color: #64748b;
+  border: 2px solid var(--color-border, #ced4da);
+  color: #222222;
   transition: all 0.2s ease-in-out;
 }
 
@@ -98,33 +99,65 @@
   margin-top: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: #64748b;
+  color: #222222;
+  text-align: center;
   transition: color 0.2s ease;
   white-space: nowrap;
 }
 
-.quickstart-wizard-container .quickstart-stepper .quickstart-step-item.active .step-badge, .quickstart-wizard-container .quickstart-stepper .quickstart-step-item:hover .step-badge {
-  background: #2185d0;
-  border-color: #2185d0;
-  color: #ffffff;
-  box-shadow: 0 0 0 4px rgba(33, 133, 208, 0.18);
-}
-
-.quickstart-wizard-container .quickstart-stepper .quickstart-step-item.active .step-label, .quickstart-wizard-container .quickstart-stepper .quickstart-step-item:hover .step-label {
-  color: #0f172a;
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item .step-badge-tag {
+  display: block;
+  font-size: 11.5px;
   font-weight: 600;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
-.quickstart-wizard-container .quickstart-stepper .quickstart-step-item.completed .step-badge {
-  background: #2185d0;
-  border-color: #2185d0;
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item .step-badge-tag.required {
+  color: var(--color-danger, #c0392b);
+}
+
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item .step-badge-tag.optional {
+  color: #555555;
+}
+
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item .step-badge-tag.conditional {
+  color: var(--color-warning, #d35400);
+}
+
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item.active .step-badge,
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item:hover .step-badge {
+  background: var(--brand-primary, #2185d0);
+  border-color: var(--brand-primary, #2185d0);
   color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(33, 133, 208, 0.25);
+}
+
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item.active .step-label,
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item:hover .step-label {
+  color: #000000;
+  font-weight: 700;
+}
+
+/* Green badge when step data is completed */
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item.completed .step-badge,
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item.completed:hover .step-badge,
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item.completed.active .step-badge {
+  background: #28a745 !important;
+  border-color: #28a745 !important;
+  color: #ffffff !important;
+}
+
+.quickstart-wizard-container .quickstart-stepper .quickstart-step-item.completed.active .step-badge {
+  box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.25) !important;
 }
 
 .quickstart-wizard-container .quickstart-card {
+  width: 100%;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--color-border, #ced4da);
+  border-radius: 6px;
   padding: 24px;
   margin-bottom: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -132,28 +165,30 @@
 }
 
 .quickstart-wizard-container .quickstart-card:focus-within {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: #adb5bd;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
 }
 
 .quickstart-wizard-container .quickstart-card .quickstart-card-header {
   display: flex;
   align-items: center;
   margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .quickstart-wizard-container .quickstart-card .quickstart-card-header .card-step-num {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: #2185d0;
+  background: var(--brand-primary, #2185d0);
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
+  margin-right: 8px;
   flex-shrink: 0;
 }
 
@@ -161,29 +196,74 @@
   font-size: 18px;
   font-weight: 600;
   margin: 0;
-  color: #0f172a;
+  color: #222222;
+}
+
+.quickstart-wizard-container .quickstart-card .quickstart-card-header .card-step-tag {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.quickstart-wizard-container .quickstart-card .quickstart-card-header .card-step-tag.tag-required {
+  background-color: #fdf2f2;
+  color: var(--color-danger, #c0392b);
+  border: 1px solid #ebccd1;
+}
+
+.quickstart-wizard-container .quickstart-card .quickstart-card-header .card-step-tag.tag-optional {
+  background-color: #f8f9fa;
+  color: #333333;
+  border: 1px solid #ced4da;
+}
+
+.quickstart-wizard-container .quickstart-card .quickstart-card-header .card-step-tag.tag-conditional {
+  background-color: #fff8e1;
+  color: #8a6d3b;
+  border: 1px solid #faebcc;
 }
 
 .quickstart-wizard-container .quickstart-card .quickstart-card-desc {
   font-size: 13.5px;
-  color: #64748b;
-  margin-left: 38px;
+  color: #222222;
+  margin-left: 34px;
   margin-bottom: 20px;
 }
 
 .quickstart-wizard-container .quickstart-card .quickstart-card-body {
-  padding-left: 38px;
+  padding-left: 34px;
+}
+
+.quickstart-wizard-container .currency-form-group {
+  margin-bottom: 16px;
+}
+
+.quickstart-wizard-container .currency-form-group .currency-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.quickstart-wizard-container .currency-form-group .currency-select-wrapper {
+  max-width: 320px;
 }
 
 .quickstart-wizard-container .quickstart-callout {
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 12px 16px;
   font-size: 13.5px;
   margin-top: 16px;
   margin-bottom: 0;
-  background-color: #f0f9ff;
-  border: 1px solid #bae6fd;
-  color: #0369a1;
+  background-color: #f0f7fd;
+  border: 1px solid #cce2f5;
+  color: #222222;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -191,12 +271,13 @@
 
 .quickstart-wizard-container .quickstart-callout i {
   font-size: 16px;
+  color: var(--brand-primary, #2185d0);
   flex-shrink: 0;
 }
 
 .quickstart-wizard-container .quickstart-ticket-table-wrapper {
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border: 1px solid var(--color-border, #ced4da);
+  border-radius: 4px;
   overflow: hidden;
   margin-bottom: 16px;
   background: #ffffff;
@@ -208,40 +289,31 @@
 }
 
 .quickstart-wizard-container .quickstart-table th {
-  background: #f8fafc;
-  color: #475569;
+  background: var(--color-grey-ultralight, #f8f8f8);
+  color: #222222;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 12px 14px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border, #ced4da);
   border-top: none;
 }
 
 .quickstart-wizard-container .quickstart-table td {
   padding: 12px 14px;
   vertical-align: middle;
-  border-top: 1px solid #f1f5f9;
-}
-
-.quickstart-wizard-container .quickstart-table .col-drag {
-  width: 36px;
-  text-align: center;
-  padding-left: 10px;
-  padding-right: 6px;
-  color: #94a3b8;
-  cursor: grab;
+  border-top: 1px solid #eeeeee;
 }
 
 .quickstart-wizard-container .quickstart-table .col-name {
-  width: 38%;
-  min-width: 180px;
+  width: 42%;
+  min-width: 200px;
 }
 
 .quickstart-wizard-container .quickstart-table .col-price {
-  width: 22%;
-  min-width: 130px;
+  width: 24%;
+  min-width: 140px;
 }
 
 .quickstart-wizard-container .quickstart-table .col-capacity {
@@ -250,14 +322,14 @@
 }
 
 .quickstart-wizard-container .quickstart-table .col-status {
-  width: 12%;
+  width: 10%;
   min-width: 80px;
   text-align: center;
 }
 
 .quickstart-wizard-container .quickstart-table .col-actions {
-  width: 10%;
-  min-width: 60px;
+  width: 6%;
+  min-width: 50px;
   text-align: right;
 }
 
@@ -266,24 +338,24 @@
 }
 
 .quickstart-wizard-container .quickstart-table .input-group-addon {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #475569;
+  background: var(--color-grey-ultralight, #f8f8f8);
+  border-color: var(--color-border, #ced4da);
+  color: #222222;
   font-size: 12px;
   font-weight: 600;
   padding: 6px 10px;
 }
 
 .quickstart-wizard-container .quickstart-table .form-control {
-  border-color: #cbd5e1;
+  border-color: var(--color-border, #ced4da);
   border-radius: 4px;
   font-size: 13.5px;
   box-shadow: none;
 }
 
 .quickstart-wizard-container .quickstart-table .form-control:focus {
-  border-color: #2185d0;
-  box-shadow: 0 0 0 1px #2185d0;
+  border-color: var(--brand-primary, #2185d0);
+  box-shadow: 0 0 0 1px var(--brand-primary, #2185d0);
 }
 
 .quickstart-wizard-container .quickstart-status-badge {
@@ -296,21 +368,21 @@
 }
 
 .quickstart-wizard-container .quickstart-status-badge.badge-paid {
-  background-color: #dcfce7;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+  background-color: #eaf5ee;
+  color: var(--color-success, #50a167);
+  border: 1px solid #b8e2c5;
 }
 
 .quickstart-wizard-container .quickstart-status-badge.badge-free {
-  background-color: #e0f2fe;
-  color: #0369a1;
-  border: 1px solid #bae6fd;
+  background-color: #f0f7fd;
+  color: var(--brand-primary, #2185d0);
+  border: 1px solid #cce2f5;
 }
 
 .quickstart-wizard-container .btn-delete-ticket {
   background: #ffffff;
-  border: 1px solid #fecaca;
-  color: #dc2626;
+  border: 1px solid #f5c6cb;
+  color: var(--color-danger, #d9534f);
   border-radius: 4px;
   padding: 5px 10px;
   font-size: 13px;
@@ -336,7 +408,7 @@
 .quickstart-wizard-container .quickstart-table-footer .btn-add-ticket {
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  color: #0369a1;
+  color: var(--brand-primary, #2185d0);
   font-weight: 500;
   font-size: 13.5px;
   border-radius: 6px;
@@ -345,9 +417,9 @@
 }
 
 .quickstart-wizard-container .quickstart-table-footer .btn-add-ticket:hover {
-  background: #f0f9ff;
-  border-color: #0284c7;
-  color: #0284c7;
+  background: #f0f7fd;
+  border-color: var(--brand-primary, #2185d0);
+  color: var(--brand-primary, #2185d0);
 }
 
 .quickstart-wizard-container .quickstart-table-footer .btn-add-ticket i {
@@ -356,7 +428,7 @@
 
 .quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity {
   font-size: 14px;
-  color: #334155;
+  color: #222222;
 }
 
 .quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity strong {
@@ -365,7 +437,7 @@
 
 .quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity #total-capacity {
   font-weight: 700;
-  color: #0369a1;
+  color: var(--brand-primary, #2185d0);
   margin-left: 2px;
 }
 
@@ -373,7 +445,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: #94a3b8;
+  color: #555555;
   cursor: pointer;
   margin-left: 4px;
   line-height: 1;
@@ -382,7 +454,7 @@
 
 .quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .info-tooltip-icon:hover,
 .quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .info-tooltip-icon:focus {
-  color: #475569;
+  color: #222222;
 }
 
 .quickstart-wizard-container .quickstart-advanced-banner {
@@ -435,24 +507,34 @@
 }
 
 .quickstart-wizard-container .checkout-access-group .checkbox-label {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: #222222;
   cursor: pointer;
+  margin-bottom: 0;
+}
+
+.quickstart-wizard-container .checkout-access-group .checkbox-label input[type="checkbox"] {
+  margin: 3px 0 0 0;
+  flex-shrink: 0;
 }
 
 .quickstart-wizard-container .checkout-access-group .checkbox-desc {
   font-size: 13px;
-  color: #64748b;
-  margin-left: 20px;
-  margin-top: 3px;
+  color: #222222;
+  margin-left: 21px;
+  margin-top: 4px;
   margin-bottom: 0;
+  line-height: 1.45;
 }
 
 .quickstart-wizard-container .ticket-features-column h4.features-subtitle {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
-  color: #0f172a;
+  color: #222222;
   margin-top: 0;
   margin-bottom: 16px;
 }
@@ -462,18 +544,28 @@
 }
 
 .quickstart-wizard-container .ticket-features-column .feature-item .feature-label {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
   font-size: 14px;
-  font-weight: 500;
-  color: #1e293b;
+  font-weight: 600;
+  color: #222222;
   cursor: pointer;
+  margin-bottom: 0;
+}
+
+.quickstart-wizard-container .ticket-features-column .feature-item .feature-label input[type="checkbox"] {
+  margin: 3px 0 0 0;
+  flex-shrink: 0;
 }
 
 .quickstart-wizard-container .ticket-features-column .feature-item .feature-desc {
-  font-size: 12.5px;
-  color: #64748b;
-  margin-left: 20px;
-  margin-top: 2px;
+  font-size: 13px;
+  color: #222222;
+  margin-left: 21px;
+  margin-top: 4px;
   margin-bottom: 0;
+  line-height: 1.45;
 }
 
 .quickstart-wizard-container .ticket-features-column .advanced-options-subcard {
@@ -487,20 +579,21 @@
 .quickstart-wizard-container .ticket-features-column .advanced-options-subcard h5 {
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: #222222;
   margin: 0 0 4px 0;
 }
 
 .quickstart-wizard-container .ticket-features-column .advanced-options-subcard p {
-  font-size: 12.5px;
-  color: #64748b;
+  font-size: 13px;
+  color: #222222;
   margin: 0 0 10px 0;
+  line-height: 1.45;
 }
 
 .quickstart-wizard-container .ticket-features-column .advanced-options-subcard a {
   font-size: 13px;
   font-weight: 500;
-  color: #2185d0;
+  color: var(--brand-primary, #2185d0);
   text-decoration: none;
 }
 
@@ -518,16 +611,17 @@
 }
 
 .quickstart-wizard-container .payment-free-state .payment-free-title {
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
-  color: #1e293b;
+  color: #222222;
   margin-bottom: 4px;
 }
 
 .quickstart-wizard-container .payment-free-state .payment-free-desc {
   font-size: 13px;
-  color: #64748b;
+  color: #222222;
   margin: 0;
+  line-height: 1.45;
 }
 
 .quickstart-wizard-container .payment-methods-grid {
@@ -553,9 +647,9 @@
 }
 
 .quickstart-wizard-container .payment-tile.selected {
-  border-color: #2185d0;
-  background-color: #f0f7ff;
-  box-shadow: 0 0 0 1px #2185d0;
+  border-color: var(--brand-primary, #2185d0);
+  background-color: #f0f7fd;
+  box-shadow: 0 0 0 1px var(--brand-primary, #2185d0);
 }
 
 .quickstart-wizard-container .payment-tile .tile-header {
@@ -567,7 +661,7 @@
 
 .quickstart-wizard-container .payment-tile .tile-header .tile-icon {
   font-size: 22px;
-  color: #475569;
+  color: #222222;
 }
 
 .quickstart-wizard-container .payment-tile .tile-header input[type="checkbox"] {
@@ -578,14 +672,14 @@
 .quickstart-wizard-container .payment-tile .tile-title {
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: #222222;
   margin-bottom: 4px;
 }
 
 .quickstart-wizard-container .payment-tile .tile-desc {
-  font-size: 12px;
-  color: #64748b;
-  line-height: 1.4;
+  font-size: 13px;
+  color: #222222;
+  line-height: 1.45;
   margin: 0;
 }
 
@@ -598,9 +692,21 @@
   margin-bottom: 14px;
 }
 
+.quickstart-wizard-container .payment-details-box.is-hidden {
+  display: none;
+}
+
+.quickstart-wizard-container .payment-details-box .payment-details-title {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #222222;
+}
+
 .quickstart-wizard-container .payment-helper-link {
   font-size: 13px;
-  color: #64748b;
+  color: #222222;
   margin-top: 14px;
   display: flex;
   align-items: center;
@@ -608,11 +714,11 @@
 }
 
 .quickstart-wizard-container .payment-helper-link i {
-  color: #0369a1;
+  color: var(--brand-primary, #2185d0);
 }
 
 .quickstart-wizard-container .payment-helper-link a {
-  color: #2185d0;
+  color: var(--brand-primary, #2185d0);
   font-weight: 500;
 }
 
@@ -683,10 +789,11 @@
 }
 
 .quickstart-wizard-container .review-summary-card .review-badge-missing {
+  display: none;
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #dc2626;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
@@ -717,37 +824,19 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #475569;
+  color: #222222;
 }
 
 .quickstart-wizard-container .review-summary-card .review-summary-list .review-item .review-label i {
   font-size: 14px;
   width: 18px;
   text-align: center;
-  color: #64748b;
+  color: #222222;
 }
 
 .quickstart-wizard-container .review-summary-card .review-summary-list .review-item .review-value {
   font-weight: 600;
-  color: #0f172a;
-}
-
-.quickstart-wizard-container .review-summary-card .btn-edit-setup {
-  width: 100%;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  font-weight: 500;
-  font-size: 13.5px;
-  border-radius: 6px;
-  padding: 8px 16px;
-  transition: all 0.15s ease;
-}
-
-.quickstart-wizard-container .review-summary-card .btn-edit-setup:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #0f172a;
+  color: #222222;
 }
 
 .quickstart-wizard-container .quickstart-action-bar {
@@ -769,7 +858,7 @@
 }
 
 .quickstart-wizard-container .quickstart-action-bar .action-bar-left {
-  color: #64748b;
+  color: #222222;
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -777,7 +866,7 @@
 }
 
 .quickstart-wizard-container .quickstart-action-bar .action-bar-left i {
-  color: #94a3b8;
+  color: #555555;
 }
 
 .quickstart-wizard-container .quickstart-action-bar .action-bar-right {
@@ -789,7 +878,7 @@
 .quickstart-wizard-container .quickstart-action-bar .action-bar-right .btn-save-draft {
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  color: #334155;
+  color: #222222;
   font-weight: 500;
   font-size: 13.5px;
   padding: 8px 18px;
@@ -800,12 +889,12 @@
 .quickstart-wizard-container .quickstart-action-bar .action-bar-right .btn-save-draft:hover {
   background: #f8fafc;
   border-color: #94a3b8;
-  color: #0f172a;
+  color: #222222;
 }
 
 .quickstart-wizard-container .quickstart-action-bar .action-bar-right .btn-save-continue {
-  background: #2185d0;
-  border: 1px solid #2185d0;
+  background: var(--brand-primary, #2185d0);
+  border: 1px solid var(--brand-primary, #2185d0);
   color: #ffffff;
   font-weight: 600;
   font-size: 13.5px;
@@ -822,6 +911,23 @@
 
 .quickstart-wizard-container .quickstart-action-bar .action-bar-right .btn-save-continue i {
   margin-left: 6px;
+}
+
+@keyframes highlightPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(33, 133, 208, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(33, 133, 208, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(33, 133, 208, 0);
+  }
+}
+
+.quickstart-wizard-container .quickstart-card.highlight-pulse {
+  animation: highlightPulse 1.2s ease;
+  border-color: var(--brand-primary, #2185d0);
 }
 
 @media (max-width: 768px) {
