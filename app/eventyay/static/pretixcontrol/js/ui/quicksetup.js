@@ -59,7 +59,7 @@ $(function () {
         if (paid_tickets === 0) {
             $("#step-tag-payment").text(gettext("Optional")).removeClass("required").addClass("optional");
             $("#card-payment-tag").text(gettext("Not required (Free tickets)")).removeClass("tag-required").addClass("tag-optional");
-            set_step_completed(5, selected_methods_count > 0);
+            set_step_completed(5, named_tickets > 0 || selected_methods_count > 0);
         } else {
             $("#step-tag-payment").text(gettext("Required")).removeClass("optional").addClass("required");
             $("#card-payment-tag").text(gettext("Required for paid tickets")).removeClass("tag-optional").addClass("tag-required");
@@ -94,12 +94,18 @@ $(function () {
             var price_num = parseFloat(price_str);
             var is_paid = !isNaN(price_num) && price_num > 0;
 
+            var $statusCell = $row.find(".col-status");
+            var $badge = $statusCell.find(".quickstart-status-badge");
+            if (!$badge.length) {
+                $badge = $("<span></span>").addClass("quickstart-status-badge");
+                $statusCell.empty().append($badge);
+            }
             if (is_paid) {
                 paid_tickets += 1;
-                $row.find(".col-status").html('<span class="quickstart-status-badge badge-paid">' + gettext("Paid") + '</span>');
+                $badge.removeClass("badge-free").addClass("badge-paid").text(gettext("Paid"));
             } else {
                 free_tickets += 1;
-                $row.find(".col-status").html('<span class="quickstart-status-badge badge-free">' + gettext("Free") + '</span>');
+                $badge.removeClass("badge-paid").addClass("badge-free").text(gettext("Free"));
             }
 
             // Quota calculation
@@ -118,8 +124,15 @@ $(function () {
         var cap_text;
         if (override_quota !== "") {
             cap_text = override_quota;
+        } else if (total_tickets === 0) {
+            cap_text = "0";
         } else {
-            cap_text = has_infinite || total_tickets === 0 ? "∞" : total_capacity.toString();
+            cap_text = has_infinite ? "∞" : total_capacity.toString();
+        }
+        if (override_quota === "" && !$("#id_total_quota").is(":focus")) {
+            $("#total-capacity").show();
+            $("#id_total_quota").closest("div").addClass("sr-only");
+            $("#total-capacity-edit").show();
         }
         $("#total-capacity").text(cap_text);
         $("#review-total-capacity").text(cap_text);
@@ -212,22 +225,23 @@ $(function () {
 
         var $statusBox = $("#review-status-box");
         if (!$statusBox.find(".server-errors").length) {
+            var $warning = $("#review-client-warning");
+            var $success = $("#review-client-success");
+            var $list = $("#review-client-missing-list");
+
             if (missing_items.length > 0) {
-                var html = '<div class="review-status-warning">' +
-                    '<div class="status-warning-title"><i class="fa fa-exclamation-triangle"></i> <strong>' +
-                    gettext("Missing required configuration:") + '</strong></div>' +
-                    '<ul class="review-missing-list">';
+                $list.empty();
                 for (var i = 0; i < missing_items.length; i++) {
-                    html += '<li><a href="' + missing_items[i].target + '">' + missing_items[i].text + '</a></li>';
+                    var $li = $("<li></li>");
+                    var $a = $("<a></a>").attr("href", missing_items[i].target).text(missing_items[i].text);
+                    $li.append($a);
+                    $list.append($li);
                 }
-                html += '</ul><div class="status-warning-hint">' +
-                    gettext("Save draft can save without these, but Save and continue requires them.") + '</div></div>';
-                $statusBox.html(html);
+                $warning.removeClass("is-hidden").show();
+                $success.addClass("is-hidden").hide();
             } else {
-                $statusBox.html(
-                    '<div class="review-status-success"><i class="fa fa-check-circle"></i> <span>' +
-                    gettext("All essential setup steps are complete. Ready to continue!") + '</span></div>'
-                );
+                $warning.addClass("is-hidden").hide();
+                $success.removeClass("is-hidden").show();
             }
         }
     };
@@ -283,8 +297,15 @@ $(function () {
         update_tickets_and_capacity();
     });
 
+    $("[data-formset]").on("formDeleted", function () {
+        update_tickets_and_capacity();
+    });
+
     $("#ticket-type-formset").on("click", "[data-formset-delete-button]", function () {
-        setTimeout(update_tickets_and_capacity, 50);
+        var $row = $(this).closest("[data-formset-form]");
+        $row.find("input[name$=-DELETE]").prop("checked", true);
+        $row.hide();
+        update_tickets_and_capacity();
     });
 
     // Feature and checkout checkboxes change
@@ -341,7 +362,22 @@ $(function () {
     });
 
     // Total capacity override input listener
+    $("#id_total_quota").on("blur", function () {
+        if (!($(this).val() || "").trim()) {
+            $(this).closest("div").addClass("sr-only");
+            $("#total-capacity").show();
+            $("#total-capacity-edit").show();
+            update_tickets_and_capacity();
+        }
+    });
+
     $("#id_total_quota").on("change input keyup", function () {
+        var val = ($(this).val() || "").trim();
+        if (val === "" && !$(this).is(":focus")) {
+            $(this).closest("div").addClass("sr-only");
+            $("#total-capacity").show();
+            $("#total-capacity-edit").show();
+        }
         update_tickets_and_capacity();
     });
 

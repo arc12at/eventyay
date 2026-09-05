@@ -1928,16 +1928,17 @@ class QuickSetupView(FormView):
         if draft_str:
             try:
                 draft_data = json.loads(draft_str)
-                if draft_data.get('tickets'):
+                if 'tickets' in draft_data and isinstance(draft_data['tickets'], list):
                     initial = [
                         {
-                            'name': LazyI18nString(t['name']) if isinstance(t['name'], (dict, str)) else t['name'],
+                            'name': LazyI18nString(t['name']) if isinstance(t.get('name'), (dict, str)) else t.get('name', ''),
                             'default_price': Decimal(t['default_price']) if t.get('default_price') is not None else Decimal('0.00'),
                             'quota': t.get('quota'),
                         }
                         for t in draft_data['tickets']
+                        if isinstance(t, dict) and 'name' in t
                     ]
-            except Exception:
+            except (json.JSONDecodeError, TypeError, KeyError, ValueError):
                 pass
 
         return QuickSetupProductFormSet(

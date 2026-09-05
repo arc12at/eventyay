@@ -239,20 +239,29 @@
 }
 
 .quickstart-wizard-container .currency-form-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .quickstart-wizard-container .currency-form-group .currency-label {
-  display: block;
+  display: inline-block;
   font-size: 14px;
   font-weight: 600;
   color: #222222;
-  margin-bottom: 6px;
-  text-align: left;
+  margin-bottom: 0;
+  white-space: nowrap;
 }
 
 .quickstart-wizard-container .currency-form-group .currency-select-wrapper {
-  max-width: 320px;
+  width: 280px;
+  max-width: 100%;
+}
+
+.quickstart-wizard-container .currency-form-group .currency-select-wrapper .form-group {
+  margin-bottom: 0;
 }
 
 .quickstart-wizard-container .quickstart-callout {
@@ -441,20 +450,24 @@
   margin-left: 2px;
 }
 
+.quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .btn-capacity-edit,
 .quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .info-tooltip-icon {
   background: none;
   border: none;
   padding: 0;
   color: #555555;
   cursor: pointer;
-  margin-left: 4px;
+  margin-left: 6px;
   line-height: 1;
   vertical-align: middle;
+  font-size: 13px;
 }
 
+.quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .btn-capacity-edit:hover,
+.quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .btn-capacity-edit:focus,
 .quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .info-tooltip-icon:hover,
 .quickstart-wizard-container .quickstart-table-footer .quickstart-total-capacity .info-tooltip-icon:focus {
-  color: #222222;
+  color: var(--brand-primary, #2185d0);
 }
 
 .quickstart-wizard-container .quickstart-advanced-banner {
@@ -765,6 +778,11 @@
   font-style: italic;
 }
 
+.quickstart-wizard-container .review-summary-card .review-status-warning.is-hidden,
+.quickstart-wizard-container .review-summary-card .review-status-success.is-hidden {
+  display: none;
+}
+
 .quickstart-wizard-container .review-summary-card .review-status-success {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
@@ -875,7 +893,9 @@
   align-items: center;
 }
 
+.quickstart-wizard-container .quickstart-action-bar .action-bar-right .order-first,
 .quickstart-wizard-container .quickstart-action-bar .action-bar-right .btn-save-draft {
+  order: -1;
   background: #ffffff;
   border: 1px solid #cbd5e1;
   color: #222222;
@@ -961,6 +981,12 @@
   }
   .quickstart-wizard-container .quickstart-action-bar .action-bar-right {
     flex-direction: column;
+  }
+  .quickstart-wizard-container .quickstart-action-bar .action-bar-right .btn-save-draft {
+    order: 1;
+  }
+  .quickstart-wizard-container .quickstart-action-bar .action-bar-right .btn-save-continue {
+    order: 0;
   }
   .quickstart-wizard-container .quickstart-action-bar .action-bar-right .btn {
     width: 100%;

@@ -186,8 +186,8 @@
                         <div class="quickstart-total-capacity form-inline">
                             <strong>{% trans "Total capacity:" %}</strong>
                             <span id="total-capacity"></span>
-                            <button type="button" class="info-tooltip-icon" data-toggle="tooltip" title="{% trans 'You can set a limit on the total number of tickets sold for your event, regardless of the ticket type.' %}" aria-label="{% trans 'Configure total capacity limit' %}" id="total-capacity-edit">
-                                <i class="fa fa-info-circle" aria-hidden="true"></i>
+                            <button type="button" class="btn-capacity-edit" data-toggle="tooltip" title="{% trans 'Edit total capacity limit' %}" aria-label="{% trans 'Edit total capacity limit' %}" id="total-capacity-edit">
+                                <i class="fa fa-pencil" aria-hidden="true"></i>
                             </button>
                             {% bootstrap_field form.total_quota layout="inline" field_class="sr-only" %}
                         </div>
@@ -310,10 +310,10 @@
                         {% if form.payment_banktransfer__enabled %}
                             <div class="payment-tile {% if form.payment_banktransfer__enabled.value %}selected{% endif %}" data-target="#id_payment_banktransfer__enabled">
                                 <div class="tile-header">
-                                    <i class="fa fa-university tile-icon"></i>
-                                    <input type="checkbox" name="payment_banktransfer__enabled" id="id_payment_banktransfer__enabled" {% if form.payment_banktransfer__enabled.value %}checked{% endif %}>
+                                    <i class="fa fa-university tile-icon" aria-hidden="true"></i>
+                                    <input type="checkbox" name="payment_banktransfer__enabled" id="id_payment_banktransfer__enabled" aria-label="{% trans 'Bank transfer' %}" {% if form.payment_banktransfer__enabled.value %}checked{% endif %}>
                                 </div>
-                                <div class="tile-title">{% trans "Bank transfer" %}</div>
+                                <label for="id_payment_banktransfer__enabled" class="tile-title">{% trans "Bank transfer" %}</label>
                                 <p class="tile-desc">{% trans "Attendees will receive bank details to complete the transfer." %}</p>
                             </div>
                         {% endif %}
@@ -321,10 +321,10 @@
                         {% if form.payment_manualpayment__enabled %}
                             <div class="payment-tile {% if form.payment_manualpayment__enabled.value %}selected{% endif %}" data-target="#id_payment_manualpayment__enabled">
                                 <div class="tile-header">
-                                    <i class="fa fa-money tile-icon"></i>
-                                    <input type="checkbox" name="payment_manualpayment__enabled" id="id_payment_manualpayment__enabled" {% if form.payment_manualpayment__enabled.value %}checked{% endif %}>
+                                    <i class="fa fa-money tile-icon" aria-hidden="true"></i>
+                                    <input type="checkbox" name="payment_manualpayment__enabled" id="id_payment_manualpayment__enabled" aria-label="{% trans 'Manual payment' %}" {% if form.payment_manualpayment__enabled.value %}checked{% endif %}>
                                 </div>
-                                <div class="tile-title">{% trans "Manual payment" %}</div>
+                                <label for="id_payment_manualpayment__enabled" class="tile-title">{% trans "Manual payment" %}</label>
                                 <p class="tile-desc">{% trans "You will mark orders as paid manually after receiving payment." %}</p>
                             </div>
                         {% endif %}
@@ -332,10 +332,10 @@
                         {% if form.payment_stripe__enabled %}
                             <div class="payment-tile {% if form.payment_stripe__enabled.value %}selected{% endif %}" data-target="#id_payment_stripe__enabled">
                                 <div class="tile-header">
-                                    <i class="fa fa-cc-stripe tile-icon"></i>
-                                    <input type="checkbox" name="payment_stripe__enabled" id="id_payment_stripe__enabled" {% if form.payment_stripe__enabled.value %}checked{% endif %}>
+                                    <i class="fa fa-cc-stripe tile-icon" aria-hidden="true"></i>
+                                    <input type="checkbox" name="payment_stripe__enabled" id="id_payment_stripe__enabled" aria-label="{% trans 'Stripe' %}" {% if form.payment_stripe__enabled.value %}checked{% endif %}>
                                 </div>
-                                <div class="tile-title">{% trans "Stripe" %}</div>
+                                <label for="id_payment_stripe__enabled" class="tile-title">{% trans "Stripe" %}</label>
                                 <p class="tile-desc">{% trans "Accept credit cards and online payment methods via Stripe." %}</p>
                             </div>
                         {% endif %}
@@ -343,10 +343,10 @@
                         {% if form.payment_paypal__enabled %}
                             <div class="payment-tile {% if form.payment_paypal__enabled.value %}selected{% endif %}" data-target="#id_payment_paypal__enabled">
                                 <div class="tile-header">
-                                    <i class="fa fa-paypal tile-icon"></i>
-                                    <input type="checkbox" name="payment_paypal__enabled" id="id_payment_paypal__enabled" {% if form.payment_paypal__enabled.value %}checked{% endif %}>
+                                    <i class="fa fa-paypal tile-icon" aria-hidden="true"></i>
+                                    <input type="checkbox" name="payment_paypal__enabled" id="id_payment_paypal__enabled" aria-label="{% trans 'PayPal' %}" {% if form.payment_paypal__enabled.value %}checked{% endif %}>
                                 </div>
-                                <div class="tile-title">{% trans "PayPal" %}</div>
+                                <label for="id_payment_paypal__enabled" class="tile-title">{% trans "PayPal" %}</label>
                                 <p class="tile-desc">{% trans "Accept payments from PayPal account holders." %}</p>
                             </div>
                         {% endif %}
@@ -418,6 +418,17 @@
                             </ul>
                         </div>
                     {% endif %}
+                    <div id="review-client-warning" class="review-status-warning is-hidden">
+                        <div class="status-warning-title">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            <strong>{% trans "Missing required configuration:" %}</strong>
+                        </div>
+                        <ul class="review-missing-list" id="review-client-missing-list"></ul>
+                        <div class="status-warning-hint">{% trans "Save draft can save without these, but Save and continue requires them." %}</div>
+                    </div>
+                    <div id="review-client-success" class="review-status-success is-hidden">
+                        <i class="fa fa-check-circle"></i> <span>{% trans "All essential setup steps are complete. Ready to continue!" %}</span>
+                    </div>
                 </div>
                 <ul class="review-summary-list">
                     <li class="review-item">
@@ -473,11 +484,11 @@
                 <span>{% trans "All changes can be updated later in settings" %}</span>
             </div>
             <div class="action-bar-right">
-                <button type="submit" name="action" value="draft" class="btn btn-save-draft">
-                    {% trans "Save draft" %}
-                </button>
                 <button type="submit" name="action" value="continue" class="btn btn-save-continue">
                     {% trans "Save and continue" %} <i class="fa fa-arrow-right"></i>
+                </button>
+                <button type="submit" name="action" value="draft" class="btn btn-save-draft order-first">
+                    {% trans "Save draft" %}
                 </button>
             </div>
         </div>
