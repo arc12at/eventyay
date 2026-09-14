@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.core.mail import EmailMessage
 from django.core.validators import validate_email
 from django.db import IntegrityError, OperationalError, ProgrammingError
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, reverse
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
@@ -222,10 +222,15 @@ class GlobalSettingsTestEmailView(AdministratorPermissionRequiredMixin, View):
     Tests the current system-level email configuration without saving settings.
     """
 
-    EMAIL_TAB_HASH = '#tab3'
+    EMAIL_TAB_HASH = '#tab-email'
 
-    def _respond(self, request, level, message):
-        """Redirect back to the email tab with inline feedback. Does not save settings."""
+    def _respond(self, request: HttpRequest, level: str, message: str) -> HttpResponse:
+        """Return JSON for AJAX callers; redirect with session feedback for plain form POSTs."""
+        if (
+            request.headers.get('Accept', '').startswith('application/json')
+            or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        ):
+            return JsonResponse({'status': level, 'message': str(message)})
         request.session['admin_test_email_feedback'] = {
             'level': level,
             'message': str(message),
