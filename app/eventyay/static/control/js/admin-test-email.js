@@ -41,6 +41,8 @@ function validateRecipients(recipients, input) {
 }
 
 async function sendTestEmail(form, input, btn, feedbackEl) {
+    if (btn.disabled) return;
+    
     const loadingText = btn.dataset.loadingText;
     const invalidText = btn.dataset.invalidText;
     const genericErrorText = btn.dataset.errorText;
@@ -70,12 +72,22 @@ async function sendTestEmail(form, input, btn, feedbackEl) {
             body,
         });
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            // JSON parse failed
         }
 
-        const data = await response.json();
-        setFeedback(feedbackEl, data.status, data.message);
+        if (data && data.message) {
+            setFeedback(feedbackEl, data.status || (response.ok ? 'success' : 'error'), data.message);
+        } else if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        } else if (data) {
+            setFeedback(feedbackEl, data.status || 'success', data.message || '');
+        } else {
+            throw new Error('Invalid JSON response');
+        }
     } catch (err) {
         console.error('Test email request failed:', err);
         setFeedback(feedbackEl, 'error', genericErrorText);

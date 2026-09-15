@@ -315,11 +315,11 @@ class GlobalSettingsTestEmailView(AdministratorPermissionRequiredMixin, View):
 
                 backend = get_gmail_mail_backend(timeout=10)
                 if not backend:
-                    messages.error(
+                    return self._respond(
                         request,
+                        'error',
                         _('Gmail is selected but no account is connected. Connect Gmail in the settings first.'),
                     )
-                    return redirect(reverse('eventyay_admin:admin.global.settings'))
                 backend.test(from_addr=mail_from, to_addrs=recipients)
             elif gs.settings.email_vendor == 'smtp':
                 if not gs.settings.smtp_host or not gs.settings.smtp_port:
