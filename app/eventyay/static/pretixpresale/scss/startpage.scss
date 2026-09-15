@@ -731,6 +731,23 @@ html.rtl .startpage-event-ongoing {
       top: 50px;
       width: auto;
       max-width: none;
+
+      a.startpage-search-item {
+        display: grid;
+        grid-template-columns: 44px 1fr;
+        column-gap: 0.75rem;
+        row-gap: 0.75rem;
+        align-items: center;
+        height: auto;
+        min-height: 0;
+        padding: 0.75rem 1rem;
+        color: var(--color-text);
+        font-size: 14px;
+        font-weight: normal;
+        white-space: normal;
+        text-decoration: none;
+        background: var(--color-white, #fff);
+      }
     }
   }
 }
