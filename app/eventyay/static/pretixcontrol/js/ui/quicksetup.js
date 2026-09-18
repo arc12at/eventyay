@@ -57,12 +57,8 @@ $(function () {
         if ($("#id_payment_paypal__enabled").is(":checked")) selected_methods_count++;
 
         if (paid_tickets === 0) {
-            $("#step-tag-payment").text(gettext("Optional")).removeClass("required").addClass("optional");
-            $("#card-payment-tag").text(gettext("Not required (Free tickets)")).removeClass("tag-required").addClass("tag-optional");
             set_step_completed(5, named_tickets > 0 || selected_methods_count > 0);
         } else {
-            $("#step-tag-payment").text(gettext("Required")).removeClass("optional").addClass("required");
-            $("#card-payment-tag").text(gettext("Required for paid tickets")).removeClass("tag-optional").addClass("tag-required");
             set_step_completed(5, selected_methods_count > 0);
         }
 
@@ -431,4 +427,39 @@ $(function () {
     update_review_summary();
     update_step_completion();
     update_active_step_on_scroll();
+
+    // Auto-scroll to first error on page load if server validation failed
+    var $firstErrorCard = $(".has-error").filter(":visible").first().closest(".quickstart-card");
+    if (!$firstErrorCard.length && $(".server-errors").length) {
+        $firstErrorCard = $("#step-review");
+    }
+    if ($firstErrorCard.length) {
+        $("html, body").animate({ scrollTop: $firstErrorCard.offset().top - 80 }, 300);
+        $firstErrorCard.addClass("highlight-pulse");
+        setTimeout(function () { $firstErrorCard.removeClass("highlight-pulse"); }, 1200);
+    }
+
+    // Client-side validation on Save and continue
+    $(".btn-save-continue").on("click", function(e) {
+        var missing = [];
+        var currency = $("#id_currency").val() || "";
+        var total_tickets = parseInt($("#review-ticket-types").text(), 10) || 0;
+        var paid_tickets = parseInt($("#review-paid-tickets").text(), 10) || 0;
+        var selected_methods = $(".payment-tile input[type='checkbox']:checked").length;
+        
+        if (!currency) missing.push("#step-currency");
+        if (total_tickets === 0) missing.push("#step-tickets");
+        if (paid_tickets > 0 && selected_methods === 0) missing.push("#step-payment");
+        
+        if (missing.length > 0) {
+            e.preventDefault();
+            var $target = $(missing[0]);
+            $("html, body").animate({ scrollTop: $target.offset().top - 80 }, 300);
+            $target.addClass("highlight-pulse");
+            setTimeout(function () { $target.removeClass("highlight-pulse"); }, 1200);
+            
+            $("#review-status-box .server-errors").remove();
+            update_review_summary();
+        }
+    });
 });
