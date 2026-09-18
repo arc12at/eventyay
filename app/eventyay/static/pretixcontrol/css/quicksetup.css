@@ -144,8 +144,8 @@
 .quickstart-wizard-container .quickstart-stepper .quickstart-step-item.completed .step-badge,
 .quickstart-wizard-container .quickstart-stepper .quickstart-step-item.completed:hover .step-badge,
 .quickstart-wizard-container .quickstart-stepper .quickstart-step-item.completed.active .step-badge {
-  background: var(--brand-primary, #2185d0);
-  border-color: var(--brand-primary, #2185d0);
+  background: var(--brand-primary, #18609c);
+  border-color: var(--brand-primary, #18609c);
   color: #ffffff;
 }
 
