@@ -197,9 +197,6 @@ $(function () {
                 text: gettext("At least one ticket type is required to sell tickets."),
                 target: "#step-tickets"
             });
-            $("#review-ticket-types-missing").show();
-        } else {
-            $("#review-ticket-types-missing").hide();
         }
 
         if (paid_tickets > 0 && selected_methods.length === 0) {
@@ -207,9 +204,6 @@ $(function () {
                 text: gettext("At least one payment method is required for paid tickets."),
                 target: "#step-payment"
             });
-            $("#review-payment-missing").show();
-        } else {
-            $("#review-payment-missing").hide();
         }
 
         if (!currency) {
