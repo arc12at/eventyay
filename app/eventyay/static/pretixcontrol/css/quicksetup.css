@@ -992,3 +992,42 @@
     width: 100%;
   }
 }
+
+.quickstart-wizard-container .quickstart-card.payment-error {
+  border-color: #dc2626 !important;
+}
+
+.quickstart-wizard-container .quickstart-card.payment-error.highlight-pulse {
+  animation: highlightPulseError 1.2s ease;
+  border-color: #dc2626 !important;
+}
+
+@keyframes highlightPulseError {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+.quickstart-wizard-container .payment-error-message {
+  display: none;
+  color: #dc2626;
+  font-size: 13.5px;
+  margin-bottom: 14px;
+  font-weight: 500;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  padding: 10px 14px;
+  border-radius: 6px;
+  align-items: center;
+  gap: 8px;
+}
+
+.quickstart-wizard-container .quickstart-card.payment-error .payment-error-message {
+  display: flex;
+}

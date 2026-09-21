@@ -301,6 +301,10 @@
 
                 <!-- Paid tickets state -->
                 <div id="payment-methods-selection">
+                    <div class="payment-error-message" id="payment-error-msg" role="alert">
+                        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                        {% trans "You have a ticket with price greater than 0, so you need to choose a payment method." %}
+                    </div>
                     <div class="payment-methods-grid">
                         {% if form.payment_banktransfer__enabled %}
                             <div class="payment-tile {% if form.payment_banktransfer__enabled.value %}selected{% endif %}" data-target="#id_payment_banktransfer__enabled">

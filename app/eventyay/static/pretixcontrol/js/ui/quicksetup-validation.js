@@ -37,10 +37,43 @@ const initQuicksetupValidation = () => {
         }
     };
 
-    // 1. Auto-scroll on page load if server validation failed
+    const getPaidTicketsCount = () => {
+        let paid = 0;
+        const rows = document.querySelectorAll("#ticket-type-formset [data-formset-form]");
+        rows.forEach(row => {
+            const isDeleted = row.querySelector("input[name$='DELETE']")?.checked;
+            if (!isDeleted && isVisible(row)) {
+                const priceInput = row.querySelector("input[name*='default_price']");
+                if (priceInput) {
+                    const priceStr = priceInput.value.trim().replace(",", ".");
+                    const priceNum = parseFloat(priceStr);
+                    if (!isNaN(priceNum) && priceNum > 0) {
+                        paid++;
+                    }
+                }
+            }
+        });
+        return paid;
+    };
+
+    const clearPaymentErrorIfFreeOrSelected = () => {
+        const paymentCard = document.querySelector("#step-payment");
+        if (!paymentCard) return;
+
+        const paidCount = getPaidTicketsCount();
+        const selectedCount = document.querySelectorAll(".payment-tile input[type='checkbox']:checked").length;
+
+        // If both/all tickets price is 0 (or no paid tickets), or a payment method is selected, clear error
+        if (paidCount === 0 || selectedCount > 0) {
+            paymentCard.classList.remove("payment-error");
+        }
+    };
+
+    // 1. Auto-scroll on page load ONLY if server validation failed
     const errors = Array.from(document.querySelectorAll(".has-error"));
     const firstError = errors.find(isVisible);
-    
+    const serverErrors = document.querySelector(".server-errors");
+
     let errorCard = null;
     let controlToFocus = null;
 
@@ -49,12 +82,22 @@ const initQuicksetupValidation = () => {
         controlToFocus = firstError.querySelector("input:not([type='hidden']), select, textarea, button");
     }
 
-    if (!errorCard) {
-        const serverErrors = document.querySelector(".server-errors");
-        if (serverErrors) {
-            errorCard = document.querySelector("#step-review");
-            controlToFocus = serverErrors;
+    // Check payment validation state on load ONLY if server returned errors from submission
+    const paidTickets = getPaidTicketsCount();
+    const selectedMethods = document.querySelectorAll(".payment-tile input[type='checkbox']:checked").length;
+
+    if (serverErrors && paidTickets > 0 && selectedMethods === 0) {
+        const paymentCard = document.querySelector("#step-payment");
+        if (paymentCard) {
+            paymentCard.classList.add("payment-error");
+            if (!firstError || errorCard === document.querySelector("#step-review")) {
+                errorCard = paymentCard;
+                controlToFocus = document.querySelector(".payment-tile input[type='checkbox']");
+            }
         }
+    } else if (!errorCard && serverErrors) {
+        errorCard = document.querySelector("#step-review");
+        controlToFocus = serverErrors;
     }
 
     if (errorCard) {
@@ -67,6 +110,8 @@ const initQuicksetupValidation = () => {
     btnSaveContinue.addEventListener("click", (e) => {
         let missingTarget = null;
         let control = null;
+
+        const paymentCard = document.querySelector("#step-payment");
 
         // Check currency
         const currencySelect = document.querySelector("#id_currency");
@@ -99,15 +144,21 @@ const initQuicksetupValidation = () => {
             }
         }
 
-        // Check payment
-        if (!missingTarget) {
-            const reviewPaidTickets = document.querySelector("#review-paid-tickets");
-            const paidTickets = reviewPaidTickets ? (parseInt(reviewPaidTickets.textContent, 10) || 0) : 0;
-            const selectedMethods = document.querySelectorAll(".payment-tile input[type='checkbox']:checked").length;
-            
-            if (paidTickets > 0 && selectedMethods === 0) {
-                missingTarget = document.querySelector("#step-payment");
+        // Check payment: ONLY required if there are paid tickets
+        const currentPaidTickets = getPaidTicketsCount();
+        const currentSelectedMethods = document.querySelectorAll(".payment-tile input[type='checkbox']:checked").length;
+
+        if (currentPaidTickets > 0 && currentSelectedMethods === 0) {
+            if (paymentCard) {
+                paymentCard.classList.add("payment-error");
+            }
+            if (!missingTarget) {
+                missingTarget = paymentCard;
                 control = document.querySelector(".payment-tile input[type='checkbox']");
+            }
+        } else {
+            if (paymentCard) {
+                paymentCard.classList.remove("payment-error");
             }
         }
 
@@ -121,6 +172,50 @@ const initQuicksetupValidation = () => {
             }
         }
     });
+
+    // 3. Clear payment error dynamically when payment selection changes
+    const paymentCard = document.querySelector("#step-payment");
+    if (paymentCard) {
+        paymentCard.addEventListener("change", (e) => {
+            if (e.target.matches && e.target.matches("input[type='checkbox']")) {
+                clearPaymentErrorIfFreeOrSelected();
+            }
+        });
+    }
+
+    const paymentCheckboxes = document.querySelectorAll(".payment-tile input[type='checkbox']");
+    paymentCheckboxes.forEach(cb => {
+        cb.addEventListener("change", clearPaymentErrorIfFreeOrSelected);
+    });
+
+    const paymentTiles = document.querySelectorAll(".payment-tile");
+    paymentTiles.forEach(tile => {
+        tile.addEventListener("click", () => {
+            setTimeout(clearPaymentErrorIfFreeOrSelected, 10);
+        });
+    });
+
+    // 4. Clear payment error dynamically when ticket price is 0 or paid tickets are deleted
+    const ticketFormset = document.querySelector("#ticket-type-formset");
+    if (ticketFormset) {
+        ticketFormset.addEventListener("input", clearPaymentErrorIfFreeOrSelected);
+        ticketFormset.addEventListener("change", clearPaymentErrorIfFreeOrSelected);
+        ticketFormset.addEventListener("click", (e) => {
+            if (e.target.closest("[data-formset-delete-button]")) {
+                setTimeout(clearPaymentErrorIfFreeOrSelected, 10);
+            }
+        });
+    }
+
+    const formsetContainer = document.querySelector("[data-formset]");
+    if (formsetContainer) {
+        formsetContainer.addEventListener("formDeleted", () => {
+            setTimeout(clearPaymentErrorIfFreeOrSelected, 10);
+        });
+        formsetContainer.addEventListener("formAdded", () => {
+            setTimeout(clearPaymentErrorIfFreeOrSelected, 10);
+        });
+    }
 };
 
 if (document.readyState === 'loading') {
