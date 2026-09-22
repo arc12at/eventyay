@@ -37,6 +37,21 @@ const initQuicksetupValidation = () => {
         }
     };
 
+    const getNamedTicketsCount = () => {
+        let named = 0;
+        const rows = document.querySelectorAll("#ticket-type-formset [data-formset-form]");
+        rows.forEach(row => {
+            const isDeleted = row.querySelector("input[name$='DELETE']")?.checked;
+            if (!isDeleted && isVisible(row)) {
+                const nameInput = row.querySelector("input[name*='name']");
+                if (nameInput && nameInput.value.trim()) {
+                    named++;
+                }
+            }
+        });
+        return named;
+    };
+
     const getPaidTicketsCount = () => {
         let paid = 0;
         const rows = document.querySelectorAll("#ticket-type-formset [data-formset-form]");
@@ -56,6 +71,19 @@ const initQuicksetupValidation = () => {
         return paid;
     };
 
+    const setPaymentCheckboxesAria = (hasError) => {
+        const paymentCheckboxes = document.querySelectorAll(".payment-tile input[type='checkbox']");
+        paymentCheckboxes.forEach(cb => {
+            if (hasError) {
+                cb.setAttribute("aria-invalid", "true");
+                cb.setAttribute("aria-errormessage", "payment-error-msg");
+            } else {
+                cb.removeAttribute("aria-invalid");
+                cb.removeAttribute("aria-errormessage");
+            }
+        });
+    };
+
     const clearPaymentErrorIfFreeOrSelected = () => {
         const paymentCard = document.querySelector("#step-payment");
         if (!paymentCard) return;
@@ -66,6 +94,7 @@ const initQuicksetupValidation = () => {
         // If both/all tickets price is 0 (or no paid tickets), or a payment method is selected, clear error
         if (paidCount === 0 || selectedCount > 0) {
             paymentCard.classList.remove("payment-error");
+            setPaymentCheckboxesAria(false);
         }
     };
 
@@ -90,14 +119,29 @@ const initQuicksetupValidation = () => {
         const paymentCard = document.querySelector("#step-payment");
         if (paymentCard) {
             paymentCard.classList.add("payment-error");
-            if (!firstError || errorCard === document.querySelector("#step-review")) {
-                errorCard = paymentCard;
-                controlToFocus = document.querySelector(".payment-tile input[type='checkbox']");
-            }
+            setPaymentCheckboxesAria(true);
         }
-    } else if (!errorCard && serverErrors) {
-        errorCard = document.querySelector("#step-review");
-        controlToFocus = serverErrors;
+    }
+
+    // Map server-side non-field validation errors to their corresponding steps
+    if (!errorCard && serverErrors) {
+        const namedTickets = getNamedTicketsCount();
+        if (namedTickets === 0) {
+            errorCard = document.querySelector("#step-tickets");
+            const rows = document.querySelectorAll("#ticket-type-formset [data-formset-form]");
+            const firstVisibleRow = Array.from(rows).find(r =>
+                isVisible(r) && !r.querySelector("input[name$='DELETE']")?.checked
+            );
+            if (firstVisibleRow) {
+                controlToFocus = firstVisibleRow.querySelector("input[name*='name']");
+            }
+        } else if (paidTickets > 0 && selectedMethods === 0) {
+            errorCard = document.querySelector("#step-payment");
+            controlToFocus = document.querySelector(".payment-tile input[type='checkbox']");
+        } else {
+            errorCard = document.querySelector("#step-review");
+            controlToFocus = serverErrors;
+        }
     }
 
     if (errorCard) {
@@ -122,19 +166,10 @@ const initQuicksetupValidation = () => {
 
         // Check tickets
         if (!missingTarget) {
-            let namedTickets = 0;
-            const rows = document.querySelectorAll("#ticket-type-formset [data-formset-form]");
-            rows.forEach(row => {
-                const isDeleted = row.querySelector("input[name$='DELETE']")?.checked;
-                if (!isDeleted && isVisible(row)) {
-                    const nameInput = row.querySelector("input[name*='name']");
-                    if (nameInput && nameInput.value.trim()) {
-                        namedTickets++;
-                    }
-                }
-            });
+            const namedTickets = getNamedTicketsCount();
             if (namedTickets === 0) {
                 missingTarget = document.querySelector("#step-tickets");
+                const rows = document.querySelectorAll("#ticket-type-formset [data-formset-form]");
                 const firstVisibleRow = Array.from(rows).find(r => 
                     isVisible(r) && !r.querySelector("input[name$='DELETE']")?.checked
                 );
@@ -152,6 +187,7 @@ const initQuicksetupValidation = () => {
             if (paymentCard) {
                 paymentCard.classList.add("payment-error");
             }
+            setPaymentCheckboxesAria(true);
             if (!missingTarget) {
                 missingTarget = paymentCard;
                 control = document.querySelector(".payment-tile input[type='checkbox']");
@@ -160,6 +196,7 @@ const initQuicksetupValidation = () => {
             if (paymentCard) {
                 paymentCard.classList.remove("payment-error");
             }
+            setPaymentCheckboxesAria(false);
         }
 
         if (missingTarget) {

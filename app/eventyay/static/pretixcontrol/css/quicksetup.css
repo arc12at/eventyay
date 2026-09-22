@@ -150,7 +150,7 @@
 }
 
 .quickstart-wizard-container .quickstart-stepper .quickstart-step-item.completed.active .step-badge {
-  box-shadow: 0 0 0 4px rgba(33, 133, 208, 0.25);
+  box-shadow: 0 0 0 4px rgba(24, 96, 156, 0.25);
 }
 
 .quickstart-wizard-container .quickstart-card {
@@ -1016,7 +1016,7 @@
 
 .quickstart-wizard-container .payment-error-message {
   display: none;
-  color: #dc2626;
+  color: #b91c1c;
   font-size: 13.5px;
   margin-bottom: 14px;
   font-weight: 500;
