@@ -994,12 +994,12 @@
 }
 
 .quickstart-wizard-container .quickstart-card.payment-error {
-  border-color: #dc2626 !important;
+  border-color: #dc2626;
 }
 
 .quickstart-wizard-container .quickstart-card.payment-error.highlight-pulse {
   animation: highlightPulseError 1.2s ease;
-  border-color: #dc2626 !important;
+  border-color: #dc2626;
 }
 
 @keyframes highlightPulseError {
