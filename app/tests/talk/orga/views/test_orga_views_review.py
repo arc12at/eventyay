@@ -613,3 +613,43 @@ def test_review_overview_table_layout(review_client, review_user, submission):
     assert '<td class="nowrap">' in response.text
     assert "Yes" in response.text
 
+
+@pytest.mark.django_db
+def test_reviewer_abstain_then_submit_logs_completed(review_client, review_user, submission):
+    from django_scopes import scope
+    # First abstain
+    response = review_client.post(
+        submission.orga_urls.reviews,
+        follow=True,
+        data={
+            "review_submit": "abstain",
+        },
+    )
+    assert response.status_code == 200
+    with scope(event=submission.event):
+        review = submission.reviews.first()
+        assert review is not None
+        assert review.is_abstention is True
+
+    # Then submit a real review
+    with scope(event=submission.event):
+        category = submission.event.score_categories.first()
+        score_obj = category.scores.filter(value=1).first()
+
+    response = review_client.post(
+        submission.orga_urls.reviews,
+        follow=True,
+        data={
+            "review_submit": "save",
+            f"score_{category.id}": score_obj.id,
+            "text": "LGTM",
+        },
+    )
+    assert response.status_code == 200
+
+    with scope(event=submission.event):
+        review.refresh_from_db()
+        assert review.is_abstention is False
+        assert review.score == 1
+        # Check that it logged eventyay.review.completed
+        assert review.logged_actions().filter(action_type='eventyay.review.completed').exists()

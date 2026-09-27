@@ -543,7 +543,9 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         if self.tags_form and not self.tags_form.is_valid():
             messages.error(self.request, phrases.base.error_saving_changes)
             return super().form_invalid(form)
-        action = 'eventyay.review.completed' if not self.object else 'eventyay.review.updated'
+        was_abstention = self.object and self.object.is_abstention
+        action = 'eventyay.review.completed' if (not self.object or was_abstention) else 'eventyay.review.updated'
+        form.instance.is_abstention = False
         form.save()
         form.instance.log_action(action, person=self.request.user, orga=True)
         self.qform.review = form.instance
@@ -555,7 +557,11 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
     def post(self, request, *args, **kwargs):
         action = self.request.POST.get('review_submit') or 'save'
         if action == 'abstain':
-            Review.objects.get_or_create(user=self.request.user, submission=self.submission)
+            Review.objects.update_or_create(
+                user=self.request.user,
+                submission=self.submission,
+                defaults={'is_abstention': True}
+            )
             return redirect(self.get_success_url())
         if action == 'skip_for_now':
             key = f'{self.request.event.slug}_ignored_reviews'
