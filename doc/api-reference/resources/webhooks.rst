@@ -50,10 +50,10 @@ The following values for ``action_types`` are valid with eventyay core:
     * ``eventyay.subevent.added``
     * ``eventyay.subevent.changed``
     * ``eventyay.subevent.deleted``
-    * ``eventyay.submission.accept``
-    * ``eventyay.submission.reject``
-    * ``eventyay.submission.review.create``
-    * ``eventyay.schedule.release``
+    * ``eventyay.submission.accepted``
+    * ``eventyay.submission.rejected``
+    * ``eventyay.review.completed``
+    * ``eventyay.schedule.released``
 
 Installed plugins might register more valid values.
 

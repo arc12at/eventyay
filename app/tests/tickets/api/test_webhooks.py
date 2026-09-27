@@ -31,7 +31,7 @@ def test_hook_list(token_client, organizer, event, webhook):
     res['id'] = webhook.pk
 
     resp = token_client.get(f'/api/v1/organizers/{organizer.slug}/webhooks/')
-    print("RESPONSE_DATA:", resp.data); assert resp.status_code == 200
+    assert resp.status_code == 200
     assert [res] == resp.data['results']
 
 
@@ -40,7 +40,7 @@ def test_hook_detail(token_client, organizer, event, webhook):
     res = dict(TEST_WEBHOOK_RES)
     res['id'] = webhook.pk
     resp = token_client.get(f'/api/v1/organizers/{organizer.slug}/webhooks/{webhook.pk}/')
-    print("RESPONSE_DATA:", resp.data); assert resp.status_code == 200
+    assert resp.status_code == 200
     assert res == resp.data
 
 
@@ -112,10 +112,10 @@ def test_hook_create_invalid_action_types(token_client, organizer, event):
 def test_hook_create_cfp_action_types(token_client, organizer, event):
     payload = copy.copy(TEST_WEBHOOK_CREATE_PAYLOAD)
     payload['action_types'] = [
-        'eventyay.submission.accept',
-        'eventyay.submission.reject',
-        'eventyay.submission.review.create',
-        'eventyay.schedule.release',
+        'eventyay.submission.accepted',
+        'eventyay.submission.rejected',
+        'eventyay.review.completed',
+        'eventyay.schedule.released',
     ]
 
     response = token_client.post(
@@ -137,7 +137,7 @@ def test_hook_patch_url(token_client, organizer, event, webhook):
         {'target_url': 'https://eventyay.com'},
         format='json',
     )
-    print("RESPONSE_DATA:", resp.data); assert resp.status_code == 200
+    assert resp.status_code == 200
     webhook.refresh_from_db()
     assert webhook.target_url == 'https://eventyay.com'
     with scopes_disabled():
@@ -156,7 +156,7 @@ def test_hook_patch_types(token_client, organizer, event, webhook):
         {'action_types': ['eventyay.event.order.placed', 'eventyay.event.order.canceled']},
         format='json',
     )
-    print("RESPONSE_DATA:", resp.data); assert resp.status_code == 200
+    assert resp.status_code == 200
     webhook.refresh_from_db()
     with scopes_disabled():
         assert webhook.limit_events.count() == 1

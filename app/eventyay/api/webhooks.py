@@ -153,17 +153,18 @@ class ParametrizedSubmissionWebhookEvent(WebhookEvent):
         return self._verbose_name
 
     def build_payload(self, logentry: LogEntry):
-        submission = logentry.content_object
-        if not submission:
-            return None
+        with scope(event=logentry.event):
+            submission = logentry.content_object
+            if not submission:
+                return None
 
-        return {
-            'notification_id': logentry.pk,
-            'organizer': logentry.event.organizer.slug,
-            'event': logentry.event.slug,
-            'submission': submission.code,
-            'action': logentry.action_type,
-        }
+            return {
+                'notification_id': logentry.pk,
+                'organizer': logentry.event.organizer.slug,
+                'event': logentry.event.slug,
+                'submission': submission.code,
+                'action': logentry.action_type,
+            }
 
 
 class ParametrizedReviewWebhookEvent(WebhookEvent):
@@ -181,17 +182,18 @@ class ParametrizedReviewWebhookEvent(WebhookEvent):
         return self._verbose_name
 
     def build_payload(self, logentry: LogEntry):
-        review = logentry.content_object
-        if not review:
-            return None
+        with scope(event=logentry.event):
+            review = logentry.content_object
+            if not review:
+                return None
 
-        return {
-            'notification_id': logentry.pk,
-            'organizer': logentry.event.organizer.slug,
-            'event': logentry.event.slug,
-            'submission': review.submission.code,
-            'action': logentry.action_type,
-        }
+            return {
+                'notification_id': logentry.pk,
+                'organizer': logentry.event.organizer.slug,
+                'event': logentry.event.slug,
+                'submission': review.submission.code,
+                'action': logentry.action_type,
+            }
 
 
 class ParametrizedScheduleWebhookEvent(WebhookEvent):
@@ -209,17 +211,18 @@ class ParametrizedScheduleWebhookEvent(WebhookEvent):
         return self._verbose_name
 
     def build_payload(self, logentry: LogEntry):
-        schedule = logentry.content_object
-        if not schedule:
-            return None
+        with scope(event=logentry.event):
+            schedule = logentry.content_object
+            if not schedule:
+                return None
 
-        return {
-            'notification_id': logentry.pk,
-            'organizer': logentry.event.organizer.slug,
-            'event': logentry.event.slug,
-            'schedule': schedule.version,
-            'action': logentry.action_type,
-        }
+            return {
+                'notification_id': logentry.pk,
+                'organizer': logentry.event.organizer.slug,
+                'event': logentry.event.slug,
+                'schedule': schedule.version,
+                'action': logentry.action_type,
+            }
 
 
 class ParametrizedSubEventWebhookEvent(WebhookEvent):
@@ -331,19 +334,19 @@ def register_default_webhook_events(sender, **kwargs):
             _('Event details changed'),
         ),
         ParametrizedSubmissionWebhookEvent(
-            'eventyay.submission.accept',
+            'eventyay.submission.accepted',
             _('Proposal accepted'),
         ),
         ParametrizedSubmissionWebhookEvent(
-            'eventyay.submission.reject',
+            'eventyay.submission.rejected',
             _('Proposal rejected'),
         ),
         ParametrizedReviewWebhookEvent(
-            'eventyay.submission.review.create',
+            'eventyay.review.completed',
             _('Review submitted'),
         ),
         ParametrizedScheduleWebhookEvent(
-            'eventyay.schedule.release',
+            'eventyay.schedule.released',
             _('Schedule released'),
         ),
         ParametrizedSubEventWebhookEvent(
@@ -394,7 +397,7 @@ def notify_webhooks(logentry_ids: list):
                 organizer=logentry.organizer, has_el=True, enabled=True
             )
             if logentry.event_id:
-                webhooks = webhooks.filter(Q(all_events=True) | Q(limit_events__pk=logentry.event_id)); print("FOUND WEBHOOKS:", webhooks)
+                webhooks = webhooks.filter(Q(all_events=True) | Q(limit_events__pk=logentry.event_id))
 
         for wh in webhooks:
             send_webhook.apply_async(args=(logentry.id, notification_type.action_type, wh.pk))

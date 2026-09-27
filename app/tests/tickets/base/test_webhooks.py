@@ -86,10 +86,10 @@ def monkeypatch_on_commit(monkeypatch):
 def cfp_webhook(organizer, event):
     webhook = organizer.webhooks.create(enabled=True, target_url='https://google.com', all_events=False)
     webhook.limit_events.add(event)
-    webhook.listeners.create(action_type='eventyay.submission.accept')
-    webhook.listeners.create(action_type='eventyay.submission.reject')
-    webhook.listeners.create(action_type='eventyay.submission.review.create')
-    webhook.listeners.create(action_type='eventyay.schedule.release')
+    webhook.listeners.create(action_type='eventyay.submission.accepted')
+    webhook.listeners.create(action_type='eventyay.submission.rejected')
+    webhook.listeners.create(action_type='eventyay.review.completed')
+    webhook.listeners.create(action_type='eventyay.schedule.released')
     return webhook
 
 
@@ -248,50 +248,50 @@ def test_webhook_trigger_cfp_lifecycle_events(event, cfp_webhook, monkeypatch):
             title='Rejected proposal',
         )
         reviewer = User.objects.create_user(email='reviewer@example.test', password='secret')
-        
+
         monkeypatch.setattr('django.db.transaction.on_commit', lambda t: t())
 
         accepted_submission.accept()
         rejected_submission.reject()
         review = Review.objects.create(submission=accepted_submission, user=reviewer)
-        review.log_action('.create', person=reviewer, orga=True)
+        review.log_action('eventyay.review.completed', person=reviewer, orga=True)
         event.release_schedule('v1')
 
     assert len(responses.calls) == 4
     payloads = [json.loads(force_str(call.request.body)) for call in responses.calls]
     assert [payload['action'] for payload in payloads] == [
-        'eventyay.submission.accept',
-        'eventyay.submission.reject',
-        'eventyay.submission.review.create',
-        'eventyay.schedule.release',
+        'eventyay.submission.accepted',
+        'eventyay.submission.rejected',
+        'eventyay.review.completed',
+        'eventyay.schedule.released',
     ]
     assert payloads[0] == {
         'notification_id': payloads[0]['notification_id'],
         'organizer': 'dummy',
         'event': 'dummy',
         'submission': accepted_submission.code,
-        'action': 'eventyay.submission.accept',
+        'action': 'eventyay.submission.accepted',
     }
     assert payloads[1] == {
         'notification_id': payloads[1]['notification_id'],
         'organizer': 'dummy',
         'event': 'dummy',
         'submission': rejected_submission.code,
-        'action': 'eventyay.submission.reject',
+        'action': 'eventyay.submission.rejected',
     }
     assert payloads[2] == {
         'notification_id': payloads[2]['notification_id'],
         'organizer': 'dummy',
         'event': 'dummy',
         'submission': accepted_submission.code,
-        'action': 'eventyay.submission.review.create',
+        'action': 'eventyay.review.completed',
     }
     assert payloads[3] == {
         'notification_id': payloads[3]['notification_id'],
         'organizer': 'dummy',
         'event': 'dummy',
         'schedule': 'v1',
-        'action': 'eventyay.schedule.release',
+        'action': 'eventyay.schedule.released',
     }
     with scopes_disabled():
         assert cfp_webhook.calls.count() == 4
