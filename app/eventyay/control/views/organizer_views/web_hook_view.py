@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.db import transaction
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -167,5 +168,4 @@ class WebHookDeleteView(OrganizerDetailViewMixin, OrganizerPermissionRequiredMix
         self.request.organizer.log_action('eventyay.webhook.deleted', user=self.request.user)
         self.object.delete()
         messages.success(self.request, _('The selected webhook has been deleted.'))
-        from django.http import HttpResponseRedirect
         return HttpResponseRedirect(success_url)

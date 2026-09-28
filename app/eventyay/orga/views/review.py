@@ -5,6 +5,7 @@ from contextlib import suppress
 from urllib.parse import urlencode
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Max, OuterRef, Q, Subquery
 from django.shortcuts import get_object_or_404, redirect
@@ -557,11 +558,21 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
     def post(self, request, *args, **kwargs):
         action = self.request.POST.get('review_submit') or 'save'
         if action == 'abstain':
-            Review.objects.update_or_create(
+            if self.object:
+                if not self.request.user.has_perm('base.update_review', self.object):
+                    raise PermissionDenied()
+            else:
+                if not self.request.user.has_perm('base.review_submission', self.submission):
+                    raise PermissionDenied()
+
+            review, created = Review.objects.update_or_create(
                 user=self.request.user,
                 submission=self.submission,
-                defaults={'is_abstention': True}
+                defaults={'is_abstention': True, 'score': None, 'text': None}
             )
+            if not created:
+                review.scores.clear()
+                review.save()
             return redirect(self.get_success_url())
         if action == 'skip_for_now':
             key = f'{self.request.event.slug}_ignored_reviews'

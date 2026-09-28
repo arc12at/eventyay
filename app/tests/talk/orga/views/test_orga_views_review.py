@@ -653,3 +653,50 @@ def test_reviewer_abstain_then_submit_logs_completed(review_client, review_user,
         assert review.score == 1
         # Check that it logged eventyay.review.completed
         assert review.logged_actions().filter(action_type='eventyay.review.completed').exists()
+
+@pytest.mark.django_db
+def test_reviewer_scored_review_then_abstain(review_client, review_user, submission):
+    from django_scopes import scope
+    with scope(event=submission.event):
+        category = submission.event.score_categories.first()
+        score = category.scores.filter(value=1).first()
+
+    # First submit a scored review
+    response = review_client.post(
+        submission.orga_urls.reviews,
+        follow=True,
+        data={
+            f"score_{category.id}": score.id,
+            "text": "This is good",
+        },
+    )
+    assert response.status_code == 200
+
+    with scope(event=submission.event):
+        assert submission.reviews.count() == 1
+        review = submission.reviews.first()
+        assert review.score == 1
+        assert review.is_abstention is False
+        assert submission.mean_score == 1
+
+    # Now change to abstain
+    response = review_client.post(
+        submission.orga_urls.reviews,
+        follow=True,
+        data={
+            "review_submit": "abstain",
+        },
+    )
+    assert response.status_code == 200
+
+    with scope(event=submission.event):
+        assert submission.reviews.count() == 1
+        review = submission.reviews.first()
+        assert review.is_abstention is True
+        assert review.score is None
+        assert review.text is None
+        assert review.scores.count() == 0
+        from eventyay.base.models import Submission
+        submission = Submission.objects.get(pk=submission.pk)
+        assert submission.mean_score is None
+
