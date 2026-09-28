@@ -30,6 +30,7 @@ from .event import (
     generate_invite_token,
 )
 from .feedback import Feedback, FeedbackReaction
+from .event_header_preset import EventHeaderPreset, EventHeaderPresetCategory
 from .giftcards import GiftCard, GiftCardAcceptance, GiftCardTransaction
 from eventyay.base.gmail.models import GmailOAuthCredential
 from .global_plugin_config import GlobalPluginConfig
@@ -146,6 +147,8 @@ __all__ = [
     'EventMetaValue',
     'EventPlannedUsage',
     'EventView',
+    'EventHeaderPreset',
+    'EventHeaderPresetCategory',
     'Feedback',
     'FeedbackReaction',
     'FileCleanupMixin',
