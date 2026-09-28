@@ -60,7 +60,7 @@ class EventHeaderPresetForm(I18nModelForm):
 
     class Meta:
         model = EventHeaderPreset
-        fields = ['name', 'category', 'image']
+        fields = ['name', 'category', 'image', 'is_active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -76,6 +76,8 @@ class EventHeaderPresetForm(I18nModelForm):
                 raise forms.ValidationError(_('The uploaded image exceeds the maximum allowed size of 10 MB.'))
             try:
                 img = Image.open(image)
+                if Image.MAX_IMAGE_PIXELS is not None and img.width * img.height > Image.MAX_IMAGE_PIXELS:
+                    raise forms.ValidationError(_('The uploaded image dimensions are too large.'))
                 img.verify()
                 image.seek(0)
             except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):

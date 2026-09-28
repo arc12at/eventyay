@@ -93,14 +93,6 @@ def _resolve_preset_url(preset_id: str, use_thumbnail=False):
         legacy_filename = raw_id if raw_id.endswith('.jpg') else f'{raw_id}.jpg'
         return static(f'eventyay-common/images/header_presets/{folder}{legacy_filename}')
 
-    active_presets = get_active_presets()
-    if active_presets:
-        first = active_presets[0]
-        target_file = first.thumbnail if use_thumbnail and first.thumbnail else first.image
-        if target_file:
-            with suppress(ValueError, AttributeError, OSError):
-                return default_storage.url(target_file.name)
-
     return None
 
 

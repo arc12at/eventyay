@@ -219,10 +219,6 @@ export function initRegistrationFeeToggles() {
 }
 
 function dismissModal(modalId) {
-    if (window.$ && window.$.fn && window.$.fn.modal) {
-        window.$('#' + modalId).modal('hide');
-        return;
-    }
     const modal = document.getElementById(modalId);
     if (!modal) return;
     const dismissBtn = modal.querySelector('[data-dismiss="modal"]');

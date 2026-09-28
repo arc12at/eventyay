@@ -128,3 +128,16 @@ class HeaderPresetCategoryDeleteView(AdministratorPermissionRequiredMixin, Delet
 
     def delete(self, request, *args, **kwargs):
         return self.form_valid(None)
+
+from django.views.generic.detail import SingleObjectMixin
+from django.views import View
+
+class HeaderPresetToggleActiveView(AdministratorPermissionRequiredMixin, SingleObjectMixin, View):
+    model = EventHeaderPreset
+    def post(self, request, *args, **kwargs):
+        preset = self.get_object()
+        preset.is_active = not preset.is_active
+        preset.save()
+        invalidate_preset_cache()
+        messages.success(request, _('Preset visibility toggled successfully.'))
+        return redirect('eventyay_admin:admin.header_presets')

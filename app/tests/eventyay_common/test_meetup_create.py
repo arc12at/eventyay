@@ -10,12 +10,7 @@ from django_scopes import scopes_disabled
 from PIL import Image
 
 
-@receiver(connection_created)
-def _enable_pg_trgm(sender, connection, **kwargs):
-    if connection.vendor == 'postgresql':
-        with connection.cursor() as cursor:
-            cursor.execute('CREATE EXTENSION IF NOT EXISTS pg_trgm;')
-
+from eventyay.base.header_presets import invalidate_preset_cache
 from eventyay.base.meetup import (
     get_rsvp_product_and_quota,
     has_video_stream,
@@ -23,6 +18,13 @@ from eventyay.base.meetup import (
 )
 from eventyay.base.models import Event, EventHeaderPreset, EventHeaderPresetCategory, Team, User
 from eventyay.base.settings import GlobalSettingsObject
+
+
+@receiver(connection_created)
+def _enable_pg_trgm(sender, connection, **kwargs):
+    if connection.vendor == 'postgresql':
+        with connection.cursor() as cursor:
+            cursor.execute('CREATE EXTENSION IF NOT EXISTS pg_trgm;')
 
 
 @pytest.fixture
@@ -68,7 +70,6 @@ def _create_test_preset(category_name=None, category_slug=None, name='Sunset Glo
         thumbnail=_create_test_image(),
         is_active=True,
     )
-    from eventyay.base.header_presets import invalidate_preset_cache
     invalidate_preset_cache()
     return preset
 
@@ -455,7 +456,6 @@ def test_meetup_create_preset_preserved_on_validation_error(orga_client, organiz
 
 @pytest.mark.django_db
 def test_meetup_create_with_no_presets_in_db(orga_client):
-    from eventyay.base.header_presets import invalidate_preset_cache
     EventHeaderPreset.objects.all().delete()
     invalidate_preset_cache()
 

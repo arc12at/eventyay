@@ -19,20 +19,20 @@ export function initHeaderPresetCategoryFilter() {
         cards.forEach((card) => {
             const catId = card.getAttribute('data-category-id');
             if (selectedVal === 'all' || catId === selectedVal) {
-                card.style.display = '';
+                card.hidden = false;
                 visibleCount++;
             } else {
-                card.style.display = 'none';
+                card.hidden = true;
             }
         });
 
         if (emptyMsg && grid) {
             if (visibleCount === 0 && cards.length > 0) {
-                emptyMsg.style.display = '';
-                grid.style.display = 'none';
+                emptyMsg.hidden = false;
+                grid.hidden = true;
             } else {
-                emptyMsg.style.display = 'none';
-                grid.style.display = '';
+                emptyMsg.hidden = true;
+                grid.hidden = false;
             }
         }
 
@@ -42,9 +42,9 @@ export function initHeaderPresetCategoryFilter() {
                 const deleteUrl = selectedOption.getAttribute('data-delete-url');
                 if (editUrl) editBtn.setAttribute('href', editUrl);
                 if (deleteUrl) deleteBtn.setAttribute('href', deleteUrl);
-                actionsGroup.style.display = 'flex';
+                actionsGroup.hidden = false;
             } else {
-                actionsGroup.style.display = 'none';
+                actionsGroup.hidden = true;
             }
         }
 
