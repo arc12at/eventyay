@@ -153,6 +153,8 @@ class ParametrizedSubmissionWebhookEvent(WebhookEvent):
         return self._verbose_name
 
     def build_payload(self, logentry: LogEntry):
+        if not logentry.event:
+            return None
         with scope(event=logentry.event):
             submission = logentry.content_object
             if not submission:
@@ -182,6 +184,8 @@ class ParametrizedReviewWebhookEvent(WebhookEvent):
         return self._verbose_name
 
     def build_payload(self, logentry: LogEntry):
+        if not logentry.event:
+            return None
         with scope(event=logentry.event):
             review = logentry.content_object
             if not review:
@@ -211,6 +215,8 @@ class ParametrizedScheduleWebhookEvent(WebhookEvent):
         return self._verbose_name
 
     def build_payload(self, logentry: LogEntry):
+        if not logentry.event:
+            return None
         with scope(event=logentry.event):
             schedule = logentry.content_object
             if not schedule:
