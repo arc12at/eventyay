@@ -69,18 +69,6 @@
     pointer-events: none;
 }
 
-.header-image-preview-actions {
-    margin-top: 8px;
-}
-
-.header-image-action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 500;
-}
-
 /* Modal styling */
 .header-picker-modal-body {
     padding: 20px 24px;

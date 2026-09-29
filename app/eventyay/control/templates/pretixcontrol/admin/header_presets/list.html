@@ -107,7 +107,7 @@
                             </div>
                         </div>
                         <div class="preset-card-actions">
-                            <form method="post" action="{% url 'eventyay_admin:admin.header_presets.toggle' pk=preset.pk %}" class="preset-card-toggle-form">
+                            <form method="post" action="{% url 'eventyay_admin:admin.header_presets.toggle' pk=preset.pk %}">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-default btn-xs" title="{% trans 'Toggle Active' %}">
                                     <i class="fa {% if preset.is_active %}fa-eye-slash{% else %}fa-eye{% endif %}"></i>
