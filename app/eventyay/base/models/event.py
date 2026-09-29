@@ -2858,13 +2858,16 @@ class Event(
         The header image is stored under ``logo_image`` for historical reasons; ``header_image`` is
         the legacy model field.
         """
-        from eventyay.base.header_presets import is_preset_value
+        from eventyay.base.header_presets import extract_preset_id, is_preset_value, resolve_preset_to_url
 
         # Prefer settings key first (historical name), then legacy model field
         for key in ('logo_image', 'header_image'):
             raw = self.settings.get(key, as_type=str, default=None)
             if is_preset_value(raw):
-                return raw
+                preset_id = extract_preset_id(raw)
+                if resolve_preset_to_url(preset_id):
+                    return raw
+                continue
             path = _resolve_media_path(raw)
             if path:
                 return path
@@ -3013,7 +3016,6 @@ class Event(
                 preset_id = extract_preset_id(str(self._visible_header_image_path))
                 preset = get_preset_by_id().get(preset_id)
                 if not preset:
-                    from django.db.models import Q
                     from eventyay.base.models.event_header_preset import EventHeaderPreset
                     if preset_id.isdigit():
                         preset = EventHeaderPreset.objects.filter(pk=int(preset_id)).first()

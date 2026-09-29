@@ -55,38 +55,52 @@ def seed_default_presets(apps, schema_editor):
             break
 
     for item in DEFAULT_PRESETS:
-        category, _ = EventHeaderPresetCategory.objects.get_or_create(
-            name=item['category']
-        )
-        if EventHeaderPreset.objects.filter(category=category, name=item['name']).exists():
-            continue
-
         filename = item['filename']
         image_storage_path = f'header_presets/{filename}'
         thumb_storage_path = f'header_presets/thumbs/{filename}'
 
+        files_valid = False
         if static_preset_dir:
             full_source = os.path.join(static_preset_dir, filename)
             thumb_source = os.path.join(static_preset_dir, 'thumbs', filename)
 
-            if os.path.isfile(full_source) and not default_storage.exists(image_storage_path):
-                with open(full_source, 'rb') as f:
-                    default_storage.save(image_storage_path, ContentFile(f.read()))
+            if os.path.isfile(full_source) and os.path.isfile(thumb_source):
+                if not default_storage.exists(image_storage_path):
+                    with open(full_source, 'rb') as f:
+                        default_storage.save(image_storage_path, ContentFile(f.read()))
 
-            if os.path.isfile(thumb_source) and not default_storage.exists(thumb_storage_path):
-                with open(thumb_source, 'rb') as f:
-                    default_storage.save(thumb_storage_path, ContentFile(f.read()))
+                if not default_storage.exists(thumb_storage_path):
+                    with open(thumb_source, 'rb') as f:
+                        default_storage.save(thumb_storage_path, ContentFile(f.read()))
+                
+                files_valid = True
 
-        EventHeaderPreset.objects.create(
-            category=category,
-            name=item['name'],
-            image=image_storage_path,
-            thumbnail=thumb_storage_path,
-            is_active=True,
-        )
+        if not files_valid:
+            files_valid = default_storage.exists(image_storage_path) and default_storage.exists(thumb_storage_path)
+
+        if files_valid:
+            category, _ = EventHeaderPresetCategory.objects.get_or_create(
+                name=item['category']
+            )
+            if not EventHeaderPreset.objects.filter(category=category, name=item['name']).exists():
+                EventHeaderPreset.objects.create(
+                    category=category,
+                    name=item['name'],
+                    image=image_storage_path,
+                    thumbnail=thumb_storage_path,
+                    is_active=True,
+                )
 
 def rollback_default_presets(apps, schema_editor):
-    pass
+    EventHeaderPreset = apps.get_model('base', 'EventHeaderPreset')
+    
+    for item in DEFAULT_PRESETS:
+        presets = EventHeaderPreset.objects.filter(name=item['name'])
+        for preset in presets:
+            if preset.image and default_storage.exists(preset.image.name):
+                default_storage.delete(preset.image.name)
+            if preset.thumbnail and default_storage.exists(preset.thumbnail.name):
+                default_storage.delete(preset.thumbnail.name)
 
 class Migration(migrations.Migration):
 
