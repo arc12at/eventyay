@@ -2049,6 +2049,8 @@ class MeetupEventWizardBasicsForm(EventWizardBasicsForm):
 
     def clean_header_image_preset(self):
         preset_id = (self.cleaned_data.get('header_image_preset') or '').strip()
+        if self.cleaned_data.get('logo_image'):
+            return ''
         if preset_id and str(preset_id) not in get_preset_by_id():
             raise forms.ValidationError(_('Invalid header image preset.'))
         return preset_id

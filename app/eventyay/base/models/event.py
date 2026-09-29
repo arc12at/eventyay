@@ -3012,6 +3012,16 @@ class Event(
             if is_preset_value(str(self._visible_header_image_path)):
                 preset_id = extract_preset_id(str(self._visible_header_image_path))
                 preset = get_preset_by_id().get(preset_id)
+                if not preset:
+                    from django.db.models import Q
+                    from eventyay.base.models.event_header_preset import EventHeaderPreset
+                    if preset_id.isdigit():
+                        preset = EventHeaderPreset.objects.filter(pk=int(preset_id)).first()
+                    else:
+                        slug_name = preset_id.replace('-', ' ')
+                        preset = EventHeaderPreset.objects.filter(
+                            Q(name__icontains=slug_name) | Q(image__icontains=preset_id)
+                        ).first()
                 if preset and preset.image:
                     return default_storage.open(preset.image.name)
                 return None

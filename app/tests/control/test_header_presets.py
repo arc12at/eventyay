@@ -62,6 +62,7 @@ def test_admin_preset_create_view(client, admin_user, test_category):
         'name_0': 'Admin Uploaded Sunset',
         'category': test_category.pk,
         'image': test_image,
+        'is_active': 'on',
     }
     response = client.post(url, data)
     assert response.status_code == 302

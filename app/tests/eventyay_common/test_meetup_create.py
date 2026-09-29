@@ -2,8 +2,6 @@ from io import BytesIO
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db.backends.signals import connection_created
-from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.timezone import now
 from django_scopes import scopes_disabled
@@ -18,13 +16,6 @@ from eventyay.base.meetup import (
 )
 from eventyay.base.models import Event, EventHeaderPreset, EventHeaderPresetCategory, Team, User
 from eventyay.base.settings import GlobalSettingsObject
-
-
-@receiver(connection_created)
-def _enable_pg_trgm(sender, connection, **kwargs):
-    if connection.vendor == 'postgresql':
-        with connection.cursor() as cursor:
-            cursor.execute('CREATE EXTENSION IF NOT EXISTS pg_trgm;')
 
 
 @pytest.fixture
