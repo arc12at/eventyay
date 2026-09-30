@@ -877,13 +877,23 @@ select.gc-add-select {
     flex-direction: column;
   }
 
+  .gc-header-content {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
   .gc-filter-form {
     flex-direction: column;
     align-items: stretch;
   }
 
   .gc-filter-input-wrap,
-  .gc-filter-select-wrap,
+  .gc-filter-select-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
   .gc-filter-buttons {
     width: 100%;
   }
@@ -898,5 +908,10 @@ select.gc-add-select {
     flex-direction: column;
     align-items: stretch;
     max-width: 100%;
+  }
+
+  .gc-add-select {
+    flex: 1 1 auto;
+    width: 100%;
   }
 }

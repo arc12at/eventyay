@@ -1207,7 +1207,7 @@ class GiftCardFilterForm(FilterForm):
         })
         self.fields['state'].choices = [
             ('', _('Filter by Status')),
-            ('empty', _('Empty ($0.00)')),
+            ('empty', _('Empty (no remaining value)')),
             ('valid_value', _('Valid and with value')),
             ('expired_value', _('Expired and with value')),
             ('expired', _('Expired')),
@@ -1221,7 +1221,7 @@ class GiftCardFilterForm(FilterForm):
         self.fields['testmode'].widget.attrs['class'] = 'form-control gc-filter-select'
         if request and hasattr(request, 'organizer'):
             currencies = list(
-                request.organizer.events.order_by('currency')
+                request.organizer.issued_gift_cards.order_by('currency')
                 .values_list('currency', flat=True)
                 .distinct()
             )

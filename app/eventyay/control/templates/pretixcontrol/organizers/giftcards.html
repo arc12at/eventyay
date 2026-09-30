@@ -4,10 +4,11 @@
 {% load urlreplace %}
 {% load bootstrap3 %}
 {% load money %}
+{% load tz %}
 
 {% block custom_header %}
     <link rel="stylesheet" type="text/css" href="{% static 'pretixcontrol/css/giftcards.css' %}" />
-    <script defer src="{% static 'pretixcontrol/js/giftcards.js' %}"></script>
+    <script type="module" src="{% static 'pretixcontrol/js/giftcards.js' %}"></script>
 {% endblock %}
 
 {% block inner %}
@@ -77,7 +78,15 @@
                 <i class="fa fa-credit-card" aria-hidden="true"></i>
             </div>
             <div class="gc-stat-info">
-                <div class="gc-stat-value">{{ total_current_value|money:currency }}</div>
+                <div class="gc-stat-value">
+                    {% if total_values %}
+                        {% for tv in total_values %}
+                            <span>{{ tv.value|money:tv.currency }}</span>{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {{ 0|money:default_currency }}
+                    {% endif %}
+                </div>
                 <div class="gc-stat-label">{% trans "Total current value" %}</div>
             </div>
         </div>
@@ -146,8 +155,8 @@
                             <th>
                                 {% trans "Gift card code" %}
                                 <span class="gc-sort-arrows">
-                                    <a href="?{% url_replace request 'ordering' '-code' %}" aria-label="{% trans 'Sort descending' %}"><i class="fa fa-caret-down"></i></a>
-                                    <a href="?{% url_replace request 'ordering' 'code' %}" aria-label="{% trans 'Sort ascending' %}"><i class="fa fa-caret-up"></i></a>
+                                    <a href="?{% url_replace request 'ordering' '-secret' %}" aria-label="{% trans 'Sort descending' %}"><i class="fa fa-caret-down"></i></a>
+                                    <a href="?{% url_replace request 'ordering' 'secret' %}" aria-label="{% trans 'Sort ascending' %}"><i class="fa fa-caret-up"></i></a>
                                 </span>
                             </th>
                             <th>{% trans "Status" %}</th>
@@ -201,17 +210,17 @@
                                     {% if g.expired %}
                                         <span class="gc-badge gc-badge-expired">{% trans "Expired" %}</span>
                                     {% elif g.cached_value == 0 %}
-                                        <span class="gc-badge gc-badge-redeemed">{% trans "$0.00 Remaining" %}</span>
+                                        <span class="gc-badge gc-badge-redeemed">{% blocktrans trimmed with amount=0|money:g.currency %}{{ amount }} Remaining{% endblocktrans %}</span>
                                     {% else %}
                                         <span class="gc-badge gc-badge-active"><span class="gc-badge-dot"></span> {% trans "Active" %}</span>
                                     {% endif %}
                                 </td>
                                 <td class="gc-date-cell">
-                                    {{ g.issuance|date:"M d, Y, H:i" }} UTC
+                                    {{ g.issuance|utc|date:"M d, Y, H:i" }} UTC
                                 </td>
                                 <td class="gc-date-cell">
                                     {% if g.expires %}
-                                        {{ g.expires|date:"M d, Y, H:i" }} UTC
+                                        {{ g.expires|utc|date:"M d, Y, H:i" }} UTC
                                     {% else %}
                                         <span class="gc-dash" aria-label="{% trans 'No expiry' %}">—</span>
                                     {% endif %}
@@ -263,9 +272,11 @@
                     {% endif %}
 
                     {% if is_paginated %}
-                        {% for p in paginator.page_range %}
+                        {% for p in paginator.get_elided_page_range %}
                             {% if p == page_obj.number %}
                                 <span class="gc-page-btn gc-page-btn-active">{{ p }}</span>
+                            {% elif p == paginator.ELLIPSIS or p == '…' %}
+                                <span class="gc-page-btn gc-page-btn-disabled" aria-hidden="true">&hellip;</span>
                             {% else %}
                                 <a href="?{% url_replace request 'page' p %}" class="gc-page-btn">{{ p }}</a>
                             {% endif %}
