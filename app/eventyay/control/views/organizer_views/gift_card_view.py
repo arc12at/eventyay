@@ -5,12 +5,13 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import OuterRef, Subquery, Sum
+from django.db.models import OuterRef, Q, Subquery, Sum
 from django.db.models.functions import Coalesce
 from django.forms import DecimalField
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils.functional import cached_property
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
@@ -38,7 +39,7 @@ class GiftCardListView(OrganizerDetailViewMixin, OrganizerPermissionRequiredMixi
     template_name = 'pretixcontrol/organizers/giftcards.html'
     permission = 'can_manage_gift_cards'
     context_object_name = 'giftcards'
-    paginate_by = 50
+    paginate_by = 3
 
     def get_queryset(self):
         s = (
@@ -94,6 +95,29 @@ class GiftCardListView(OrganizerDetailViewMixin, OrganizerPermissionRequiredMixi
         ctx['other_organizers'] = self.request.user.get_organizers_with_permission(
             'can_manage_gift_cards', self.request
         ).exclude(pk=self.request.organizer.pk)
+
+        cards = self.request.organizer.issued_gift_cards.all()
+        now_dt = now()
+        ctx['total_cards_count'] = cards.count()
+        ctx['active_cards_count'] = cards.filter(Q(expires__isnull=True) | Q(expires__gte=now_dt)).count()
+        ctx['expired_cards_count'] = cards.filter(expires__lt=now_dt).count()
+
+        val = (
+            GiftCardTransaction.objects.filter(card__issuer=self.request.organizer)
+            .aggregate(total=Sum('value'))['total'] or Decimal('0.00')
+        )
+        ctx['total_current_value'] = val
+        any_event = self.request.organizer.events.first()
+        ctx['currency'] = any_event.currency if any_event else settings.DEFAULT_CURRENCY
+
+        currencies = list(
+            self.request.organizer.events.order_by('currency')
+            .values_list('currency', flat=True)
+            .distinct()
+        )
+        if len(currencies) > 1:
+            ctx['filter_currencies'] = currencies
+
         return ctx
 
     @cached_property
