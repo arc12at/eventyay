@@ -96,7 +96,7 @@
                             <a href="{% querystring sort="-submission_type__name" %}"><i class="fa fa-caret-up" title="{% translate "Sort (z-a)" %}"></i></a>
                         </th>
                     {% endif %}
-                    {% if request.event|get_feature_flag:"use_tracks" and filter_form.track %}
+                    {% if request.event|get_feature_flag:"use_tracks" %}
                         <th>
                             {% translate "Track" %}
                             <a href="{% querystring sort="track__name" %}"><i class="fa fa-caret-down" title="{% translate "Sort (a-z)" %}"></i></a>
@@ -148,7 +148,7 @@
                             </td>
                         {% endif %}
                         {% if show_submission_types %}<td>{{ submission.submission_type.name }}</td>{% endif %}
-                        {% if request.event|get_feature_flag:"use_tracks" and filter_form.track %}
+                        {% if request.event|get_feature_flag:"use_tracks" %}
                             <td>
                                 {% if submission.track %}
                                     <span class="track-badge{% if submission.is_anonymised %} track-badge--anon{% endif %}" data-track-id="{{ submission.track.pk }}">
