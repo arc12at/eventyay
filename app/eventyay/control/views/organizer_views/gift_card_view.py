@@ -39,7 +39,7 @@ class GiftCardListView(OrganizerDetailViewMixin, OrganizerPermissionRequiredMixi
     template_name = 'pretixcontrol/organizers/giftcards.html'
     permission = 'can_manage_gift_cards'
     context_object_name = 'giftcards'
-    paginate_by = 50
+    paginate_by = 10
 
     def get_queryset(self):
         s = (
