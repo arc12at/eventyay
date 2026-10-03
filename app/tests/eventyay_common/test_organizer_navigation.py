@@ -252,3 +252,38 @@ def test_organizer_navigation_other_plugins_preserved(rf):
 
     top_level_labels = [str(item['label']) for item in nav]
     assert 'Custom Plugin' in top_level_labels
+
+
+@pytest.mark.django_db
+def test_webhook_delete_view_form_valid(rf):
+    from unittest.mock import MagicMock
+    from eventyay.control.views.organizer_views.web_hook_view import WebHookDeleteView
+
+    view = WebHookDeleteView()
+    request = rf.post('/control/organizer/test-orga/webhook/42/delete')
+    request.user = MagicMock()
+    request.organizer = MagicMock()
+    request.organizer.slug = 'test-orga'
+    request._messages = MagicMock()
+    view.request = request
+    view.kwargs = {'organizer': 'test-orga', 'webhook': '42'}
+
+    mock_webhook = MagicMock()
+    mock_webhook.pk = 42
+    mock_webhook.target_url = 'https://example.com/webhook'
+    view.object = mock_webhook
+
+    mock_form = MagicMock()
+    response = view.form_valid(mock_form)
+
+    request.organizer.log_action.assert_called_once_with(
+        'eventyay.webhook.deleted',
+        user=request.user,
+        data={
+            'id': 42,
+            'target_url': 'https://example.com/webhook',
+        },
+    )
+    mock_webhook.delete.assert_called_once()
+    assert response.status_code == 302
+

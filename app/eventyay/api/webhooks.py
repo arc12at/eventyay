@@ -6,6 +6,7 @@ from collections import OrderedDict
 import requests
 from celery.exceptions import MaxRetriesExceededError
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Exists, OuterRef, Q
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
@@ -191,11 +192,19 @@ class ParametrizedReviewWebhookEvent(WebhookEvent):
             if not review:
                 return None
 
+            try:
+                submission = getattr(review, 'submission', None)
+                if not submission:
+                    return None
+                submission_code = submission.code
+            except (ObjectDoesNotExist, AttributeError):
+                return None
+
             return {
                 'notification_id': logentry.pk,
                 'organizer': logentry.event.organizer.slug,
                 'event': logentry.event.slug,
-                'submission': review.submission.code,
+                'submission': submission_code,
                 'action': logentry.action_type,
             }
 

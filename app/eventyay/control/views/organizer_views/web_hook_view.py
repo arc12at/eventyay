@@ -164,8 +164,14 @@ class WebHookDeleteView(OrganizerDetailViewMixin, OrganizerPermissionRequiredMix
     @transaction.atomic
     def form_valid(self, form):
         success_url = self.get_success_url()
-        self.object = self.get_object()
-        self.request.organizer.log_action('eventyay.webhook.deleted', user=self.request.user)
+        self.request.organizer.log_action(
+            'eventyay.webhook.deleted',
+            user=self.request.user,
+            data={
+                'id': self.object.pk,
+                'target_url': self.object.target_url,
+            },
+        )
         self.object.delete()
         messages.success(self.request, _('The selected webhook has been deleted.'))
         return HttpResponseRedirect(success_url)

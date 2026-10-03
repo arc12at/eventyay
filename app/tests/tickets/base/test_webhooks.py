@@ -333,3 +333,18 @@ def test_webhook_trigger_batch_with_invalid_entries(event, order, webhook, monke
 
     assert len(responses.calls) == 1
     assert json.loads(force_str(responses.calls[0].request.body))['notification_id'] == le_valid.id
+
+
+@pytest.mark.django_db
+def test_review_webhook_payload_without_submission(event):
+    from unittest.mock import MagicMock
+    from eventyay.api.webhooks import ParametrizedReviewWebhookEvent
+
+    event_type = ParametrizedReviewWebhookEvent('eventyay.review.completed', 'Review completed')
+    logentry = MagicMock()
+    logentry.event = event
+    review = MagicMock()
+    review.submission = None
+    logentry.content_object = review
+
+    assert event_type.build_payload(logentry) is None

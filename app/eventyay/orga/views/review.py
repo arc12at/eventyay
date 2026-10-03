@@ -556,6 +556,7 @@ class ReviewSubmission(ReviewViewMixin, PermissionRequired, CreateOrUpdateView):
         return super().form_valid(form)
 
     def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
         action = self.request.POST.get('review_submit') or 'save'
         if action == 'abstain':
             if self.object:

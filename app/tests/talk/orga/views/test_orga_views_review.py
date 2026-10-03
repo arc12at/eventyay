@@ -700,3 +700,28 @@ def test_reviewer_scored_review_then_abstain(review_client, review_user, submiss
         submission = Submission.objects.get(pk=submission.pk)
         assert submission.mean_score is None
 
+
+@pytest.mark.django_db
+def test_reviewer_cannot_abstain_without_update_review_permission(review_client, review_user, submission, monkeypatch):
+    from django_scopes import scope
+    with scope(event=submission.event):
+        review = submission.reviews.create(user=review_user, score=1, is_abstention=False)
+
+    from django.contrib.auth.models import AnonymousUser
+    original_has_perm = type(review_user).has_perm
+
+    def mock_has_perm(self, perm, obj=None):
+        if perm == 'base.update_review':
+            return False
+        return original_has_perm(self, perm, obj)
+
+    monkeypatch.setattr(type(review_user), 'has_perm', mock_has_perm)
+
+    response = review_client.post(
+        submission.orga_urls.reviews,
+        data={
+            "review_submit": "abstain",
+        },
+    )
+    assert response.status_code == 403
+
