@@ -149,14 +149,11 @@
                 <table class="gc-table">
                     <thead>
                         <tr>
-                            <th class="gc-th-checkbox">
-                                <input type="checkbox" class="gc-checkbox gc-select-all" aria-label="{% trans 'Select all gift cards' %}">
-                            </th>
                             <th>
                                 {% trans "Gift card code" %}
                                 <span class="gc-sort-arrows">
-                                    <a href="?{% url_replace request 'ordering' '-secret' %}" aria-label="{% trans 'Sort descending' %}"><i class="fa fa-caret-down"></i></a>
-                                    <a href="?{% url_replace request 'ordering' 'secret' %}" aria-label="{% trans 'Sort ascending' %}"><i class="fa fa-caret-up"></i></a>
+                                    <a href="?{% url_replace request 'ordering' '-code' %}" aria-label="{% trans 'Sort descending' %}"><i class="fa fa-caret-down"></i></a>
+                                    <a href="?{% url_replace request 'ordering' 'code' %}" aria-label="{% trans 'Sort ascending' %}"><i class="fa fa-caret-up"></i></a>
                                 </span>
                             </th>
                             <th>{% trans "Status" %}</th>
@@ -187,9 +184,6 @@
                     <tbody>
                         {% for g in giftcards %}
                             <tr>
-                                <td class="gc-td-checkbox">
-                                    <input type="checkbox" class="gc-checkbox gc-row-checkbox" name="selected_card" value="{{ g.id }}" aria-label="{% trans 'Select gift card' %}">
-                                </td>
                                 <td>
                                     <div class="gc-code-cell">
                                         <div class="gc-code-line">
@@ -271,9 +265,9 @@
                     {% endif %}
 
                     {% if is_paginated %}
-                        {% for p in paginator.get_elided_page_range %}
+                        {% for p in page_range %}
                             {% if p == page_obj.number %}
-                                <span class="gc-page-btn gc-page-btn-active">{{ p }}</span>
+                                <span class="gc-page-btn gc-page-btn-active" aria-current="page">{{ p }}</span>
                             {% elif p == paginator.ELLIPSIS or p == '…' %}
                                 <span class="gc-page-btn gc-page-btn-disabled" aria-hidden="true">&hellip;</span>
                             {% else %}
@@ -281,7 +275,7 @@
                             {% endif %}
                         {% endfor %}
                     {% else %}
-                        <span class="gc-page-btn gc-page-btn-active">1</span>
+                        <span class="gc-page-btn gc-page-btn-active" aria-current="page">1</span>
                     {% endif %}
 
                     {% if is_paginated and page_obj.has_next %}

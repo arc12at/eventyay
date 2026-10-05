@@ -1169,6 +1169,7 @@ class GiftCardFilterForm(FilterForm):
         'issuance': 'issuance',
         'expires': F('expires').asc(nulls_last=True),
         '-expires': F('expires').desc(nulls_first=True),
+        'code': 'secret',
         'secret': 'secret',
         'value': 'cached_value',
     }
@@ -1219,16 +1220,17 @@ class GiftCardFilterForm(FilterForm):
             ('no', _('Live')),
         ]
         self.fields['testmode'].widget.attrs['class'] = 'form-control gc-filter-select'
+        self.currencies = []
         if request and hasattr(request, 'organizer'):
-            currencies = list(
+            self.currencies = list(
                 request.organizer.issued_gift_cards.order_by('currency')
                 .values_list('currency', flat=True)
                 .distinct()
             )
-            if len(currencies) > 1:
+            if len(self.currencies) > 1:
                 self.fields['currency'] = forms.ChoiceField(
                     label=_('Currency'),
-                    choices=[('', _('Filter by Currency'))] + [(c, c) for c in currencies],
+                    choices=[('', _('Filter by Currency'))] + [(c, c) for c in self.currencies],
                     required=False,
                     widget=forms.Select(attrs={'class': 'form-control gc-filter-select'}),
                 )

@@ -96,6 +96,11 @@ class GiftCardListView(OrganizerDetailViewMixin, OrganizerPermissionRequiredMixi
             'can_manage_gift_cards', self.request
         ).exclude(pk=self.request.organizer.pk)
 
+        base_cards = self.request.organizer.issued_gift_cards
+        now_dt = now()
+        ctx['total_cards_count'] = base_cards.count()
+        ctx['expired_cards_count'] = base_cards.filter(expires__lt=now_dt).count()
+
         s = (
             GiftCardTransaction.objects.filter(card=OuterRef('pk'))
             .order_by()
@@ -103,16 +108,13 @@ class GiftCardListView(OrganizerDetailViewMixin, OrganizerPermissionRequiredMixi
             .annotate(s=Sum('value'))
             .values('s')
         )
-        cards = self.request.organizer.issued_gift_cards.annotate(
+        cards = base_cards.annotate(
             cached_value=Coalesce(Subquery(s), Decimal('0.00'))
         )
-        now_dt = now()
-        ctx['total_cards_count'] = cards.count()
         ctx['active_cards_count'] = cards.filter(
             Q(expires__isnull=True) | Q(expires__gte=now_dt),
             cached_value__gt=Decimal('0.00'),
         ).count()
-        ctx['expired_cards_count'] = cards.filter(expires__lt=now_dt).count()
 
         vals = (
             GiftCardTransaction.objects.filter(card__issuer=self.request.organizer)
@@ -124,12 +126,18 @@ class GiftCardListView(OrganizerDetailViewMixin, OrganizerPermissionRequiredMixi
             {'currency': row['card__currency'], 'value': row['total'] or Decimal('0.00')}
             for row in vals
         ]
-        card_currencies = list(
-            cards.order_by('currency')
-            .values_list('currency', flat=True)
-            .distinct()
+        card_currencies = getattr(self.filter_form, 'currencies', None)
+        if card_currencies is None:
+            card_currencies = list(
+                base_cards.order_by('currency')
+                .values_list('currency', flat=True)
+                .distinct()
+            )
+        default_currency = (
+            card_currencies[0]
+            if card_currencies
+            else getattr(self.request.organizer, 'default_currency', None) or settings.DEFAULT_CURRENCY
         )
-        default_currency = card_currencies[0] if card_currencies else settings.DEFAULT_CURRENCY
 
         ctx['total_values'] = total_values
         ctx['total_current_value'] = total_values[0]['value'] if len(total_values) == 1 else None
@@ -140,9 +148,7 @@ class GiftCardListView(OrganizerDetailViewMixin, OrganizerPermissionRequiredMixi
 
         if ctx.get('page_obj') and ctx.get('paginator'):
             page_num = ctx['page_obj'].number
-            paginator = ctx['paginator']
-            orig_elided = paginator.get_elided_page_range
-            paginator.get_elided_page_range = lambda number=page_num, **kw: orig_elided(number=number, **kw)
+            ctx['page_range'] = ctx['paginator'].get_elided_page_range(number=page_num)
 
         return ctx
 
