@@ -4,7 +4,9 @@ from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic.detail import SingleObjectMixin
 
 from eventyay.base.header_presets import invalidate_preset_cache
 from eventyay.base.models.event_header_preset import EventHeaderPreset, EventHeaderPresetCategory
@@ -129,8 +131,6 @@ class HeaderPresetCategoryDeleteView(AdministratorPermissionRequiredMixin, Delet
     def delete(self, request, *args, **kwargs):
         return self.form_valid(None)
 
-from django.views.generic.detail import SingleObjectMixin
-from django.views import View
 
 class HeaderPresetToggleActiveView(AdministratorPermissionRequiredMixin, SingleObjectMixin, View):
     model = EventHeaderPreset

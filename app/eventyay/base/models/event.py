@@ -2995,7 +2995,7 @@ class Event(
         preset_id = extract_preset_id(str(self._visible_header_image_path))
         if preset_id:
             return resolve_preset_to_url(preset_id)
-        with suppress(ValueError, AttributeError, OSError):
+        with suppress(Exception):
             if is_http_url(str(self._visible_header_image_path)):
                 return self._visible_header_image_path
             return default_storage.url(self._visible_header_image_path)
@@ -3006,25 +3006,15 @@ class Event(
         from django.core.files.storage import default_storage
         from eventyay.base.header_presets import (
             extract_preset_id,
-            get_preset_by_id,
+            get_preset_by_identifier,
             is_preset_value,
         )
 
         if not self._visible_header_image_path:
             return None
-        with suppress(ValueError, AttributeError, OSError):
+        with suppress(Exception):
             if is_preset_value(str(self._visible_header_image_path)):
-                preset_id = extract_preset_id(str(self._visible_header_image_path))
-                preset = get_preset_by_id().get(preset_id)
-                if not preset:
-                    from eventyay.base.models.event_header_preset import EventHeaderPreset
-                    if preset_id.isdigit():
-                        preset = EventHeaderPreset.objects.filter(pk=int(preset_id)).first()
-                    else:
-                        slug_name = preset_id.replace('-', ' ')
-                        preset = EventHeaderPreset.objects.filter(
-                            Q(name__icontains=slug_name) | Q(image__icontains=preset_id)
-                        ).first()
+                preset = get_preset_by_identifier(self._visible_header_image_path)
                 if preset and preset.image:
                     return default_storage.open(preset.image.name)
                 return None

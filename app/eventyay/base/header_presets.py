@@ -58,40 +58,82 @@ def get_random_preset_id():
     return str(random.choice(presets).id)
 
 
+KNOWN_DEFAULT_PRESET_SLUGS = {
+    'abstract-spheres',
+    'gradient-sunset',
+    'social-gathering',
+    'tech-mesh',
+}
+CACHE_KEY_PRESET_LOOKUP_PREFIX = 'eventyay_preset_lookup:'
+
+
+def get_preset_by_identifier(preset_id: str):
+    """
+    Look up an EventHeaderPreset by numeric database ID or image slug.
+    Checks the active presets cache first, falls back to direct database query
+    (including inactive presets referenced by existing events), caches misses,
+    and avoids repeat queries.
+    """
+    if not preset_id:
+        return None
+    raw_id = str(preset_id).strip()
+    if raw_id.startswith(PRESET_PREFIX):
+        raw_id = raw_id[len(PRESET_PREFIX):]
+    if not raw_id:
+        return None
+
+    active_presets = get_preset_by_id()
+    if raw_id in active_presets:
+        return active_presets[raw_id]
+
+    cache_key = f'{CACHE_KEY_PRESET_LOOKUP_PREFIX}{raw_id}'
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached if cached != '__none__' else None
+
+    from django.db.utils import OperationalError, ProgrammingError
+    from eventyay.base.models.event_header_preset import EventHeaderPreset
+
+    preset = None
+    try:
+        if raw_id.isdigit():
+            preset = EventHeaderPreset.objects.filter(pk=int(raw_id)).first()
+        else:
+            slug = raw_id[:-4] if raw_id.endswith('.jpg') else raw_id
+            possible_images = [raw_id, f'{slug}.jpg', f'header_presets/{raw_id}', f'header_presets/{slug}.jpg']
+            preset = EventHeaderPreset.objects.filter(image__in=possible_images).first()
+    except (OperationalError, ProgrammingError):
+        preset = None
+
+    cache.set(cache_key, preset if preset is not None else '__none__', CACHE_TIMEOUT)
+    return preset
+
+
 def _resolve_preset_url(preset_id: str, use_thumbnail=False):
     """Internal helper to resolve a preset to its full or thumbnail URL."""
     if not preset_id:
         return None
-        
+
     raw_id = str(preset_id).strip()
     if raw_id.startswith(PRESET_PREFIX):
         raw_id = raw_id[len(PRESET_PREFIX):]
+    if not raw_id:
+        return None
 
-    preset = get_preset_by_id().get(raw_id)
-    
-    from django.db.models import Q
     from django.core.files.storage import default_storage
-    from eventyay.base.models.event_header_preset import EventHeaderPreset
 
-    if not preset:
-        if raw_id.isdigit():
-            preset = EventHeaderPreset.objects.filter(pk=int(raw_id)).first()
-        else:
-            slug_name = raw_id.replace('-', ' ')
-            preset = EventHeaderPreset.objects.filter(
-                Q(name__icontains=slug_name) | Q(image__icontains=raw_id)
-            ).first()
-
+    preset = get_preset_by_identifier(raw_id)
     if preset:
         target_file = preset.thumbnail if use_thumbnail and preset.thumbnail else preset.image
         if target_file:
-            with suppress(ValueError, AttributeError, OSError):
+            with suppress(Exception):
                 return default_storage.url(target_file.name)
 
-    if not raw_id.isdigit():
+    # For legacy slugs not found in the DB, only serve static assets for known defaults
+    slug = raw_id[:-4] if raw_id.endswith('.jpg') else raw_id
+    if slug in KNOWN_DEFAULT_PRESET_SLUGS:
         folder = 'thumbs/' if use_thumbnail else ''
-        legacy_filename = raw_id if raw_id.endswith('.jpg') else f'{raw_id}.jpg'
-        return static(f'eventyay-common/images/header_presets/{folder}{legacy_filename}')
+        return static(f'eventyay-common/images/header_presets/{folder}{slug}.jpg')
 
     return None
 

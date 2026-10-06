@@ -1,8 +1,11 @@
 import io
 import os
+from contextlib import suppress
 from django import forms
 from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
+from django.db import transaction
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -97,25 +100,36 @@ class EventHeaderPresetForm(I18nModelForm):
         uploaded_image = self.cleaned_data.get('image')
 
         has_new_upload = bool(uploaded_image and isinstance(uploaded_image, UploadedFile))
+        new_files_to_cleanup = []
         if has_new_upload:
             full_file, thumb_file = optimize_header_preset_images(uploaded_image)
-            instance.image.save(full_file.name, full_file, save=False)
-            instance.thumbnail.save(thumb_file.name, thumb_file, save=False)
+            try:
+                instance.image.save(full_file.name, full_file, save=False)
+                if instance.image:
+                    new_files_to_cleanup.append(instance.image.name)
+                instance.thumbnail.save(thumb_file.name, thumb_file, save=False)
+                if instance.thumbnail:
+                    new_files_to_cleanup.append(instance.thumbnail.name)
+                if commit:
+                    instance.save()
+            except Exception:
+                for file_path in new_files_to_cleanup:
+                    with suppress(Exception):
+                        default_storage.delete(file_path)
+                raise
+        elif commit:
+            instance.save()
 
         if commit:
-            instance.save()
             if has_new_upload and (old_image or old_thumbnail):
                 def _cleanup_old_files():
-                    from contextlib import suppress
-                    from django.core.files.storage import default_storage
                     if old_image and old_image != instance.image.name:
-                        with suppress(OSError):
+                        with suppress(Exception):
                             default_storage.delete(old_image)
                     if old_thumbnail and old_thumbnail != instance.thumbnail.name:
-                        with suppress(OSError):
+                        with suppress(Exception):
                             default_storage.delete(old_thumbnail)
 
-                from django.db import transaction
                 transaction.on_commit(_cleanup_old_files)
 
             invalidate_preset_cache()
