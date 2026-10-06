@@ -1620,7 +1620,16 @@ class UserFilterForm(FilterForm):
                     ordering = 'admin_list_fullname'
                 elif ordering == '-fullname':
                     ordering = '-admin_list_fullname'
-            qs = qs.order_by(ordering)
+            if ordering == 'last_login':
+                qs = qs.annotate(
+                    admin_last_accessed=Coalesce('last_login', 'date_joined')
+                ).order_by(F('admin_last_accessed').asc(nulls_last=True))
+            elif ordering == '-last_login':
+                qs = qs.annotate(
+                    admin_last_accessed=Coalesce('last_login', 'date_joined')
+                ).order_by(F('admin_last_accessed').desc(nulls_last=True))
+            else:
+                qs = qs.order_by(ordering)
 
         return qs
 

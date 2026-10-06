@@ -165,18 +165,30 @@ class UserFilterFormTest(TestCase):
         now = timezone.now()
         u1 = _make_user('ll1@ex.com')
         u1.last_login = now - timedelta(days=2)
-        u1.save(update_fields=['last_login'])
+        u1.date_joined = now - timedelta(days=10)
+        u1.save(update_fields=['last_login', 'date_joined'])
+
         u2 = _make_user('ll2@ex.com')
         u2.last_login = now - timedelta(days=1)
-        u2.save(update_fields=['last_login'])
+        u2.date_joined = now - timedelta(days=10)
+        u2.save(update_fields=['last_login', 'date_joined'])
 
+        # u3 has never logged in (last_login is None); fallback to date_joined
+        u3 = _make_user('ll3@ex.com')
+        u3.last_login = None
+        u3.date_joined = now - timedelta(days=5)
+        u3.save(update_fields=['last_login', 'date_joined'])
+
+        # Ascending: u1 (2 days ago), u2 (1 day ago), u3 (fallback 5 days ago -> earliest is u1=2d, u3=5d, u2=1d)
+        # Specifically: u3 (5d ago) < u1 (2d ago) < u2 (1d ago)
         qs_asc = self._filter({'ordering': 'last_login'})
-        emails = list(qs_asc.filter(email__in=['ll1@ex.com', 'll2@ex.com']).values_list('email', flat=True))
-        self.assertEqual(emails, ['ll1@ex.com', 'll2@ex.com'])
+        emails = list(qs_asc.filter(email__in=['ll1@ex.com', 'll2@ex.com', 'll3@ex.com']).values_list('email', flat=True))
+        self.assertEqual(emails, ['ll3@ex.com', 'll1@ex.com', 'll2@ex.com'])
 
+        # Descending: u2 (1d ago) > u1 (2d ago) > u3 (5d ago)
         qs_desc = self._filter({'ordering': '-last_login'})
-        emails = list(qs_desc.filter(email__in=['ll1@ex.com', 'll2@ex.com']).values_list('email', flat=True))
-        self.assertEqual(emails, ['ll2@ex.com', 'll1@ex.com'])
+        emails = list(qs_desc.filter(email__in=['ll1@ex.com', 'll2@ex.com', 'll3@ex.com']).values_list('email', flat=True))
+        self.assertEqual(emails, ['ll2@ex.com', 'll1@ex.com', 'll3@ex.com'])
 
 
 class AdminUserListViewTest(TestCase):
@@ -210,11 +222,32 @@ class AdminUserListViewTest(TestCase):
         self.assertIn('ordering=date_joined', content)
         self.assertIn('ordering=-last_login', content)
         self.assertIn('ordering=last_login', content)
+        self.assertIn('aria-label="Sort by Member Since descending"', content)
+        self.assertIn('aria-label="Sort by Member Since ascending"', content)
+        self.assertIn('aria-label="Sort by Last Accessed descending"', content)
+        self.assertIn('aria-label="Sort by Last Accessed ascending"', content)
         self.assertIn('Verified', content)
         self.assertIn('Mark as Spam', content)
         self.assertIn('name="action" value="toggle_verified"', content)
         self.assertIn('name="action" value="toggle_spam"', content)
         self.assertIn(f'name="user_id" value="{self.target_user.pk}"', content)
+
+    def test_sort_links_remove_page_parameter(self):
+        for i in range(31):
+            _make_user(f'pageuser{i}@example.com')
+        self._login_as_admin()
+        with patch.object(self.admin.__class__, 'has_active_staff_session', return_value=True):
+            response = self.client.get(reverse('eventyay_admin:admin.users') + '?page=2')
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        # Verify sort URLs do not retain page=2
+        for order_param in ['ordering=-date_joined', 'ordering=date_joined', 'ordering=-last_login', 'ordering=last_login']:
+            self.assertIn(order_param, content)
+        self.assertNotIn('ordering=-date_joined&amp;page=2', content)
+        self.assertNotIn('page=2&amp;ordering=-date_joined', content)
+        self.assertNotIn('ordering=date_joined&amp;page=2', content)
+        self.assertNotIn('ordering=-last_login&amp;page=2', content)
+        self.assertNotIn('ordering=last_login&amp;page=2', content)
 
 
 class UserToggleViewsTest(TestCase):
