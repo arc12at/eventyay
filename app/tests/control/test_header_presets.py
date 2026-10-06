@@ -3,10 +3,11 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils.timezone import now
+from django_scopes import scopes_disabled
 from PIL import Image
 
 from eventyay.base.header_presets import get_active_presets, invalidate_preset_cache
-from eventyay.base.models import EventHeaderPreset, EventHeaderPresetCategory, User
+from eventyay.base.models import Event, EventHeaderPreset, EventHeaderPresetCategory, Organizer, User
 
 
 def _create_test_image(width=1920, height=640):
@@ -163,3 +164,37 @@ def test_admin_preset_category_crud(client, admin_user):
     response = client.post(delete_url)
     assert response.status_code == 302
     assert not EventHeaderPresetCategory.objects.filter(pk=cat.pk).exists()
+
+
+@pytest.fixture
+def organizer():
+    return Organizer.objects.create(name='Test Org', slug='test-org-presets')
+
+
+@pytest.mark.django_db
+def test_preset_resolution_in_event_model(organizer, test_category):
+    preset = EventHeaderPreset.objects.create(
+        name='Ocean Breeze',
+        category=test_category,
+        image=_create_test_image(),
+        thumbnail=_create_test_image(400, 133),
+        is_active=True,
+    )
+    invalidate_preset_cache()
+
+    with scopes_disabled():
+        event = Event.objects.create(
+            organizer=organizer,
+            name='Direct Model Preset Test',
+            slug='direct-model-preset-test',
+            date_from=now(),
+            date_to=now(),
+        )
+        event.settings.set('logo_image', f'preset:{preset.pk}')
+
+        assert event._visible_header_image_path == f'preset:{preset.pk}'
+        assert event.visible_header_image_url is not None
+        assert event.visible_header_image_file is not None
+        assert event.preview_image_url_with_fallback is not None
+        assert event.preview_image_url_small is not None
+
