@@ -140,6 +140,44 @@ class UserFilterFormTest(TestCase):
         qs = self._filter({})
         self.assertGreaterEqual(qs.count(), 4)
 
+    def test_order_by_date_joined(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        now = timezone.now()
+        u1 = _make_user('dj1@ex.com')
+        u1.date_joined = now - timedelta(days=2)
+        u1.save(update_fields=['date_joined'])
+        u2 = _make_user('dj2@ex.com')
+        u2.date_joined = now - timedelta(days=1)
+        u2.save(update_fields=['date_joined'])
+
+        qs_asc = self._filter({'ordering': 'date_joined'})
+        emails = list(qs_asc.filter(email__in=['dj1@ex.com', 'dj2@ex.com']).values_list('email', flat=True))
+        self.assertEqual(emails, ['dj1@ex.com', 'dj2@ex.com'])
+
+        qs_desc = self._filter({'ordering': '-date_joined'})
+        emails = list(qs_desc.filter(email__in=['dj1@ex.com', 'dj2@ex.com']).values_list('email', flat=True))
+        self.assertEqual(emails, ['dj2@ex.com', 'dj1@ex.com'])
+
+    def test_order_by_last_login(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        now = timezone.now()
+        u1 = _make_user('ll1@ex.com')
+        u1.last_login = now - timedelta(days=2)
+        u1.save(update_fields=['last_login'])
+        u2 = _make_user('ll2@ex.com')
+        u2.last_login = now - timedelta(days=1)
+        u2.save(update_fields=['last_login'])
+
+        qs_asc = self._filter({'ordering': 'last_login'})
+        emails = list(qs_asc.filter(email__in=['ll1@ex.com', 'll2@ex.com']).values_list('email', flat=True))
+        self.assertEqual(emails, ['ll1@ex.com', 'll2@ex.com'])
+
+        qs_desc = self._filter({'ordering': '-last_login'})
+        emails = list(qs_desc.filter(email__in=['ll1@ex.com', 'll2@ex.com']).values_list('email', flat=True))
+        self.assertEqual(emails, ['ll2@ex.com', 'll1@ex.com'])
+
 
 class AdminUserListViewTest(TestCase):
 
@@ -168,6 +206,10 @@ class AdminUserListViewTest(TestCase):
         content = response.content.decode()
         self.assertIn('Member Since', content)
         self.assertIn('Last Accessed', content)
+        self.assertIn('ordering=-date_joined', content)
+        self.assertIn('ordering=date_joined', content)
+        self.assertIn('ordering=-last_login', content)
+        self.assertIn('ordering=last_login', content)
         self.assertIn('Verified', content)
         self.assertIn('Mark as Spam', content)
         self.assertIn('name="action" value="toggle_verified"', content)
