@@ -257,21 +257,30 @@ class AdminUserListViewTest(TestCase):
         self.assertIn(f'name="user_id" value="{self.target_user.pk}"', content)
 
     def test_sort_links_remove_page_parameter(self):
+        from urllib.parse import parse_qs, urlparse
+
+        from bs4 import BeautifulSoup
+
         for i in range(31):
             _make_user(f'pageuser{i}@example.com')
         self._login_as_admin()
         with patch.object(self.admin.__class__, 'has_active_staff_session', return_value=True):
             response = self.client.get(reverse('eventyay_admin:admin.users') + '?page=2')
         self.assertEqual(response.status_code, 200)
-        content = response.content.decode()
-        # Verify sort URLs do not retain page=2
-        for order_param in ['ordering=-date_joined', 'ordering=date_joined', 'ordering=-last_login', 'ordering=last_login']:
-            self.assertIn(order_param, content)
-        self.assertNotIn('ordering=-date_joined&amp;page=2', content)
-        self.assertNotIn('page=2&amp;ordering=-date_joined', content)
-        self.assertNotIn('ordering=date_joined&amp;page=2', content)
-        self.assertNotIn('ordering=-last_login&amp;page=2', content)
-        self.assertNotIn('ordering=last_login&amp;page=2', content)
+
+        doc = BeautifulSoup(response.content.decode(), 'lxml')
+        expected_sort_links = {
+            'Sort by Member Since descending': '-date_joined',
+            'Sort by Member Since ascending': 'date_joined',
+            'Sort by Last Accessed descending': '-last_login',
+            'Sort by Last Accessed ascending': 'last_login',
+        }
+        for label, expected_order in expected_sort_links.items():
+            link = doc.find('a', attrs={'aria-label': label})
+            self.assertIsNotNone(link, f'Sort link with aria-label "{label}" not found')
+            parsed_query = parse_qs(urlparse(link['href']).query)
+            self.assertNotIn('page', parsed_query)
+            self.assertEqual(parsed_query.get('ordering'), [expected_order])
 
 
 class UserToggleViewsTest(TestCase):
