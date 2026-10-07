@@ -190,6 +190,30 @@ class UserFilterFormTest(TestCase):
         emails = list(qs_desc.filter(email__in=['ll1@ex.com', 'll2@ex.com', 'll3@ex.com']).values_list('email', flat=True))
         self.assertEqual(emails, ['ll2@ex.com', 'll1@ex.com', 'll3@ex.com'])
 
+    def test_order_by_identical_timestamps_tie_breaker(self):
+        from django.utils import timezone
+
+        now = timezone.now()
+        u1 = _make_user('tie1@ex.com')
+        u1.last_login = now
+        u1.date_joined = now
+        u1.save(update_fields=['last_login', 'date_joined'])
+
+        u2 = _make_user('tie2@ex.com')
+        u2.last_login = now
+        u2.date_joined = now
+        u2.save(update_fields=['last_login', 'date_joined'])
+
+        expected = [u2.email, u1.email] if u2.pk > u1.pk else [u1.email, u2.email]
+
+        qs_last_login = self._filter({'ordering': '-last_login'})
+        emails = list(qs_last_login.filter(email__in=['tie1@ex.com', 'tie2@ex.com']).values_list('email', flat=True))
+        self.assertEqual(emails, expected)
+
+        qs_date_joined = self._filter({'ordering': '-date_joined'})
+        emails = list(qs_date_joined.filter(email__in=['tie1@ex.com', 'tie2@ex.com']).values_list('email', flat=True))
+        self.assertEqual(emails, expected)
+
 
 class AdminUserListViewTest(TestCase):
 
