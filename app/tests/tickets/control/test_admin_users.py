@@ -2,14 +2,16 @@ import json
 import smtplib
 import time
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlencode, urlparse
 
+from allauth.account.models import EmailAddress
+from bs4 import BeautifulSoup
+from celery.exceptions import Retry
 from django import forms as django_forms
 from django.db.models import Exists, OuterRef
 from django.test import TestCase
 from django.urls import reverse
 
-from allauth.account.models import EmailAddress
-from celery.exceptions import Retry
 from eventyay.base.forms.auth import LoginForm
 from eventyay.base.models import User
 from eventyay.base.services.mail import SendMailException
@@ -257,15 +259,17 @@ class AdminUserListViewTest(TestCase):
         self.assertIn(f'name="user_id" value="{self.target_user.pk}"', content)
 
     def test_sort_links_remove_page_parameter(self):
-        from urllib.parse import parse_qs, urlparse
-
-        from bs4 import BeautifulSoup
-
         for i in range(31):
             _make_user(f'pageuser{i}@example.com')
         self._login_as_admin()
+        query_params = {
+            'query': 'pageuser',
+            'status': 'active',
+            'spam': 'no',
+            'page': '2',
+        }
         with patch.object(self.admin.__class__, 'has_active_staff_session', return_value=True):
-            response = self.client.get(reverse('eventyay_admin:admin.users') + '?page=2')
+            response = self.client.get(reverse('eventyay_admin:admin.users') + '?' + urlencode(query_params))
         self.assertEqual(response.status_code, 200)
 
         doc = BeautifulSoup(response.content.decode(), 'lxml')
@@ -281,6 +285,9 @@ class AdminUserListViewTest(TestCase):
             parsed_query = parse_qs(urlparse(link['href']).query)
             self.assertNotIn('page', parsed_query)
             self.assertEqual(parsed_query.get('ordering'), [expected_order])
+            self.assertEqual(parsed_query.get('query'), ['pageuser'])
+            self.assertEqual(parsed_query.get('status'), ['active'])
+            self.assertEqual(parsed_query.get('spam'), ['no'])
 
 
 class UserToggleViewsTest(TestCase):
