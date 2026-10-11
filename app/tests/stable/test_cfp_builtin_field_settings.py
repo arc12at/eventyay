@@ -1,9 +1,10 @@
 import pytest
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.urls import reverse
 from django_scopes import scopes_disabled
 
-from eventyay.cfp.flow import FIELD_DEFAULTS, FIELD_STEP_MAP, CfPFlow, get_field_default
+from eventyay.cfp.flow import FIELD_DEFAULTS, FIELD_STEP_MAP, CfPFlow, ProfileStep, get_field_default
 from eventyay.orga.forms.cfp import CfPBuiltinFieldSettingsForm, CfPSettingsForm
 
 
@@ -240,7 +241,6 @@ def test_cfp_settings_form_does_not_clear_gravatar_when_saved(event):
 
 def test_profile_step_social_links_context(event, rf):
     """Verify ProfileStep passes configured social_links label and help text to context."""
-    from eventyay.cfp.flow import ProfileStep
     event.cfp.settings['flow'] = {
         'steps': {
             'profile': {
@@ -257,7 +257,6 @@ def test_profile_step_social_links_context(event, rf):
     event.cfp.settings['cfp_request_social_links'] = True
     event.cfp.save(update_fields=['settings'])
 
-    from django.contrib.auth.models import AnonymousUser
     request = rf.get('/cfp/')
     request.user = AnonymousUser()
     request.event = event
