@@ -214,18 +214,115 @@ def test_cfp_settings_form_does_not_clear_gravatar_when_saved(event):
     """Verify saving CfPSettingsForm without the removed popover does not clear cfp_enable_gravatar."""
     event.cfp.settings['cfp_enable_gravatar'] = True
     event.cfp.save(update_fields=['settings'])
+    init_form = CfPSettingsForm(read_only=False, locales=event.locales, obj=event, prefix='settings')
+    post_data = {}
+    for name, field in init_form.fields.items():
+        if name == 'content_locales':
+            post_data[f'settings-{name}'] = event.locales
+        elif hasattr(field, 'choices'):
+            valid_choices = [c[0] for c in field.choices if c[0]]
+            post_data[f'settings-{name}'] = field.initial if field.initial in valid_choices else (valid_choices[0] if valid_choices else '')
+        elif field.initial is not None:
+            post_data[f'settings-{name}'] = field.initial
     sform = CfPSettingsForm(
         read_only=False,
         locales=event.locales,
         obj=event,
-        data={
-            'settings-cfp_ask_title': 'required',
-            'settings-cfp_ask_abstract': 'optional',
-        },
+        data=post_data,
         prefix='settings',
     )
     assert 'cfp_enable_gravatar' not in sform.fields
-    if sform.is_valid():
-        sform.save()
+    assert sform.is_valid(), sform.errors
+    sform.save()
     event.cfp.refresh_from_db()
     assert event.cfp.enable_gravatar is True
+
+
+def test_profile_step_social_links_context(event, rf):
+    """Verify ProfileStep passes configured social_links label and help text to context."""
+    from eventyay.cfp.flow import ProfileStep
+    event.cfp.settings['flow'] = {
+        'steps': {
+            'profile': {
+                'fields': [
+                    {
+                        'key': 'social_links',
+                        'label': {'en': 'Custom Social Media Heading'},
+                        'help_text': {'en': 'Add your LinkedIn or Twitter profile.'},
+                    }
+                ]
+            }
+        }
+    }
+    event.cfp.settings['cfp_request_social_links'] = True
+    event.cfp.save(update_fields=['settings'])
+
+    from django.contrib.auth.models import AnonymousUser
+    request = rf.get('/cfp/')
+    request.user = AnonymousUser()
+    request.event = event
+    request.LANGUAGE_CODE = 'en'
+    step = ProfileStep(event)
+    step.request = request
+    step.cfp_session = {'data': {}, 'files': {}}
+
+    context = step.get_context_data()
+    assert context['social_links_label'] == 'Custom Social Media Heading'
+    assert context['social_links_help_text'] == 'Add your LinkedIn or Twitter profile.'
+
+
+def test_builtin_field_settings_explicitly_empty_help_text_and_disabled_locales(event):
+    """Verify empty help text is preserved (not replaced with default) and disabled locales are retained on save."""
+    event.locale_array = 'en'
+    event.save()
+    event.__dict__.pop('locales', None)
+    event.cfp.settings['flow'] = {
+        'steps': {
+            'profile': {
+                'fields': [
+                    {
+                        'key': 'job_title',
+                        'label': {'en': 'Job Title EN', 'de': 'Berufsbezeichnung DE'},
+                        'help_text': {'en': ''},
+                    }
+                ]
+            }
+        }
+    }
+    event.cfp.save(update_fields=['settings'])
+
+    form = CfPBuiltinFieldSettingsForm(event=event, field_key='job_title')
+    assert form.initial['help_text'].data['en'] == ''
+
+    post_data = {
+        'label_0': 'Updated Job Title EN',
+        'help_text_0': '',
+    }
+    bound_form = CfPBuiltinFieldSettingsForm(event=event, field_key='job_title', data=post_data)
+    assert bound_form.is_valid(), bound_form.errors
+    bound_form.save()
+
+    event.cfp.refresh_from_db()
+    flow_config = event.cfp.settings.get('flow', {})
+    fields = flow_config.get('steps', {}).get('profile', {}).get('fields', [])
+    job_field = next((f for f in fields if f.get('key') == 'job_title'), None)
+    assert job_field is not None
+    assert job_field['label']['en'] == 'Updated Job Title EN'
+    assert job_field['label']['de'] == 'Berufsbezeichnung DE'
+    assert job_field['help_text']['en'] == ''
+
+
+def test_builtin_field_settings_invalid_active_lang_fallback(organizer_client, event):
+    """Verify form_valid falls back to the first available event locale when active_lang is invalid."""
+    url = reverse(
+        'orga:cfp.field.settings',
+        kwargs={'organizer': event.organizer.slug, 'event': event.slug, 'field': 'title'},
+    )
+    post_data = {
+        'label_0': 'My Proposal Title',
+        'help_text_0': 'My Help Text',
+        'active_lang': 'invalid_locale_xyz',
+    }
+    response = organizer_client.post(url, post_data)
+    assert response.status_code == 302
+    assert response.url.endswith(url + f'?lang={event.locales[0]}')

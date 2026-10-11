@@ -3,6 +3,7 @@ import http
 import json
 import logging
 from collections import defaultdict
+from urllib.parse import urlencode
 
 from csp.decorators import csp_update
 from django.conf import settings
@@ -327,18 +328,18 @@ class CfPForms(EventPermissionRequired, TemplateView):
                                         val = (
                                             lbl.localize(self.request.LANGUAGE_CODE)
                                             if hasattr(lbl, 'localize')
-                                            else str(lbl)
+                                            else (lbl.get(self.request.LANGUAGE_CODE) if isinstance(lbl, dict) else str(lbl))
                                         )
                                         if val:
                                             field_labels[f_key] = val
-                                    if 'help_text' in field_data and field_data['help_text']:
+                                    if 'help_text' in field_data and field_data['help_text'] is not None:
                                         ht = field_data['help_text']
                                         val = (
                                             ht.localize(self.request.LANGUAGE_CODE)
                                             if hasattr(ht, 'localize')
-                                            else str(ht)
+                                            else (ht.get(self.request.LANGUAGE_CODE) if isinstance(ht, dict) else str(ht))
                                         )
-                                        if val:
+                                        if val is not None:
                                             field_help_texts[f_key] = val
                                             question_texts[f_key] = val
         except Exception as e:
@@ -1128,15 +1129,20 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
         flow.save_config(config)
 
         messages.success(request, _('Reset to default values.'))
-        return redirect(request.path + f'?lang={active_lang}')
+        query_string = urlencode({'lang': active_lang})
+        return redirect(f'{request.path}?{query_string}')
 
     def form_valid(self, form):
         form.save()
         messages.success(self.request, phrases.base.saved)
+        event = self.request.event
         active_lang = (
             self.request.POST.get('active_lang')
             or self.request.GET.get('lang')
             or self.request.LANGUAGE_CODE
         )
-        return redirect(self.request.path + (f'?lang={active_lang}' if active_lang else ''))
+        if not event.locales or active_lang not in event.locales:
+            active_lang = event.locales[0] if event.locales else 'en'
+        query_string = urlencode({'lang': active_lang})
+        return redirect(f'{self.request.path}?{query_string}')
 

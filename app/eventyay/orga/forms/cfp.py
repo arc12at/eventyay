@@ -980,27 +980,34 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
 
         label_data = {}
         help_text_data = {}
+        primary_locale = getattr(event, 'primary_locale', None) or (locales[0] if locales else 'en')
         for loc in locales:
             val = None
-            if stored_label:
-                if isinstance(stored_label, LazyI18nString) and loc in stored_label.data:
-                    val = stored_label.data[loc]
-                elif isinstance(stored_label, dict) and loc in stored_label:
-                    val = stored_label[loc]
-                else:
-                    val = str(stored_label)
+            if stored_label is not None:
+                if isinstance(stored_label, LazyI18nString):
+                    if loc in stored_label.data:
+                        val = stored_label.data[loc]
+                elif isinstance(stored_label, dict):
+                    if loc in stored_label:
+                        val = stored_label[loc]
+                elif isinstance(stored_label, str):
+                    if loc == primary_locale:
+                        val = stored_label
             if not val:
                 val = get_field_default(field_key, 'label', loc)
             label_data[loc] = val
 
             ht_val = None
-            if stored_help_text:
-                if isinstance(stored_help_text, LazyI18nString) and loc in stored_help_text.data:
-                    ht_val = stored_help_text.data[loc]
-                elif isinstance(stored_help_text, dict) and loc in stored_help_text:
-                    ht_val = stored_help_text[loc]
-                else:
-                    ht_val = str(stored_help_text)
+            if stored_help_text is not None:
+                if isinstance(stored_help_text, LazyI18nString):
+                    if loc in stored_help_text.data:
+                        ht_val = stored_help_text.data[loc]
+                elif isinstance(stored_help_text, dict):
+                    if loc in stored_help_text:
+                        ht_val = stored_help_text[loc]
+                elif isinstance(stored_help_text, str):
+                    if loc == primary_locale:
+                        ht_val = stored_help_text
             if ht_val is None:
                 ht_val = get_field_default(field_key, 'help_text', loc)
             help_text_data[loc] = ht_val
@@ -1028,11 +1035,45 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
             field_entry = {'key': self.field_key}
             fields_list.append(field_entry)
 
+        existing_label = field_entry.get('label') or {}
+        if isinstance(existing_label, LazyI18nString):
+            existing_label = copy.deepcopy(existing_label.data)
+        elif not isinstance(existing_label, dict):
+            fallback_loc = self.event.locales[0] if self.event.locales else 'en'
+            existing_label = {fallback_loc: str(existing_label)}
+        else:
+            existing_label = copy.deepcopy(existing_label)
+
         label_val = self.cleaned_data['label']
-        field_entry['label'] = label_val.data if isinstance(label_val, LazyI18nString) else label_val
+        submitted_label = (
+            label_val.data
+            if isinstance(label_val, LazyI18nString)
+            else (label_val if isinstance(label_val, dict) else {})
+        )
+        for loc in self.event.locales:
+            if loc in submitted_label:
+                existing_label[loc] = submitted_label[loc]
+        field_entry['label'] = existing_label
+
+        existing_help_text = field_entry.get('help_text') or {}
+        if isinstance(existing_help_text, LazyI18nString):
+            existing_help_text = copy.deepcopy(existing_help_text.data)
+        elif not isinstance(existing_help_text, dict):
+            fallback_loc = self.event.locales[0] if self.event.locales else 'en'
+            existing_help_text = {fallback_loc: str(existing_help_text)}
+        else:
+            existing_help_text = copy.deepcopy(existing_help_text)
 
         help_text_val = self.cleaned_data['help_text']
-        field_entry['help_text'] = help_text_val.data if isinstance(help_text_val, LazyI18nString) else help_text_val
+        submitted_help_text = (
+            help_text_val.data
+            if isinstance(help_text_val, LazyI18nString)
+            else (help_text_val if isinstance(help_text_val, dict) else {})
+        )
+        for loc in self.event.locales:
+            if loc in submitted_help_text:
+                existing_help_text[loc] = submitted_help_text[loc]
+        field_entry['help_text'] = existing_help_text
 
         flow.save_config(config)
 

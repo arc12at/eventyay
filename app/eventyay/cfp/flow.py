@@ -17,7 +17,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.datastructures import MultiValueDict
 from django.utils.functional import Promise, cached_property
-from django.utils.translation import gettext
+from django.utils.translation import gettext, override
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import TemplateResponseMixin
 from i18nfield.strings import LazyI18nString
@@ -178,7 +178,6 @@ def get_field_default(field_key: str, attr: str, locale: str) -> str:
     val = defaults.get(attr, '')
     if not val:
         return ''
-    from django.utils.translation import override
     with override(locale):
         return str(val)
 
@@ -936,6 +935,40 @@ class ProfileStep(GenericFlowStep, FormFlowStep):
         result['social_media_formset'] = formset
         result['social_link_prefixes'] = social_link_prefixes() if formset is not None else {}
         result['show_social_links'] = formset is not None
+
+        fields_config = self.config.get('fields', [])
+        if isinstance(fields_config, dict):
+            field_data = fields_config.get('social_links', {})
+        else:
+            field_data = next(
+                (f for f in fields_config if isinstance(f, dict) and f.get('key') == 'social_links'),
+                {},
+            )
+
+        social_links_label = None
+        if field_data.get('label'):
+            lbl = field_data['label']
+            social_links_label = (
+                lbl.localize(self.request.LANGUAGE_CODE)
+                if hasattr(lbl, 'localize')
+                else (lbl.get(self.request.LANGUAGE_CODE) if isinstance(lbl, dict) else str(lbl))
+            )
+        if not social_links_label:
+            social_links_label = get_field_default('social_links', 'label', self.request.LANGUAGE_CODE)
+
+        social_links_help_text = None
+        if 'help_text' in field_data and field_data['help_text'] is not None:
+            ht = field_data['help_text']
+            social_links_help_text = (
+                ht.localize(self.request.LANGUAGE_CODE)
+                if hasattr(ht, 'localize')
+                else (ht.get(self.request.LANGUAGE_CODE) if isinstance(ht, dict) else str(ht))
+            )
+        if social_links_help_text is None:
+            social_links_help_text = get_field_default('social_links', 'help_text', self.request.LANGUAGE_CODE)
+
+        result['social_links_label'] = social_links_label
+        result['social_links_help_text'] = social_links_help_text
         return result
 
     def post(self, request):

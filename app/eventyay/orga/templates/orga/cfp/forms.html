@@ -138,7 +138,7 @@
                         <tr dragsort-id="title">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.title|default:_("Title") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.title|default:question_texts.title }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.title|default_if_none:question_texts.title }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch always-on" aria-label="{% translate 'Title is always active' %}">
@@ -178,7 +178,7 @@
                         <tr dragsort-id="submission_type">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.submission_type|default:_("Session type") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.submission_type|default:question_texts.submission_type }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.submission_type|default_if_none:question_texts.submission_type }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch always-on" aria-label="{% translate 'Session type is always active' %}">
@@ -219,7 +219,7 @@
                         <tr dragsort-id="abstract">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.abstract|default:_("Abstract") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.abstract|default:question_texts.abstract }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.abstract|default_if_none:question_texts.abstract }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -267,7 +267,7 @@
                         <tr dragsort-id="description">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.description|default:_("Description") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.description|default:question_texts.description }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.description|default_if_none:question_texts.description }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -315,7 +315,7 @@
                         <tr dragsort-id="notes">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.notes|default:_("Notes") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.notes|default:question_texts.notes }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.notes|default_if_none:question_texts.notes }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -357,7 +357,7 @@
                         <tr dragsort-id="track">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.track|default:_("Track") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.track|default:question_texts.track }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.track|default_if_none:question_texts.track }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -404,7 +404,7 @@
                         <tr dragsort-id="duration">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.duration|default:_("Duration") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.duration|default:question_texts.duration }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.duration|default_if_none:question_texts.duration }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -451,7 +451,7 @@
                         <tr dragsort-id="slot_count">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.slot_count|default:_("Slot Count") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.slot_count|default:question_texts.slot_count }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.slot_count|default_if_none:question_texts.slot_count }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -506,7 +506,7 @@
                                         </span>
                                     </span>
                                 </span>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.content_locale|default:question_texts.content_locale }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.content_locale|default_if_none:question_texts.content_locale }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -559,7 +559,7 @@
                         <tr dragsort-id="image">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.image|default:_("Session image") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.image|default:question_texts.image }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.image|default_if_none:question_texts.image }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -607,7 +607,7 @@
                         <tr dragsort-id="slides">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.slides|default:_("Slides") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.slides|default:question_texts.slides }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.slides|default_if_none:question_texts.slides }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -699,7 +699,7 @@
                         <tr dragsort-id="do_not_record">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.do_not_record|default:_("Recording opt-out") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.do_not_record|default:question_texts.do_not_record }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.do_not_record|default_if_none:question_texts.do_not_record }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -838,7 +838,7 @@
                         <tr dragsort-id="fullname">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.fullname|default:_("Full Name") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.fullname|default:question_texts.fullname }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.fullname|default_if_none:question_texts.fullname }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch always-on" aria-label="{% translate 'Full Name is always active' %}">
@@ -883,7 +883,7 @@
                         <tr dragsort-id="biography">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.biography|default:_("Biography") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.biography|default:question_texts.biography }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.biography|default_if_none:question_texts.biography }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -932,7 +932,7 @@
                         <tr dragsort-id="job_title">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.job_title|default:_("Job title/role") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.job_title|default:question_texts.job_title }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.job_title|default_if_none:question_texts.job_title }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -980,7 +980,7 @@
                         <tr dragsort-id="organization">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.organization|default:_("Organization") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.organization|default:question_texts.organization }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.organization|default_if_none:question_texts.organization }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1028,7 +1028,7 @@
                         <tr dragsort-id="avatar">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.avatar|default:_("Profile picture") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.avatar|default:question_texts.avatar }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.avatar|default_if_none:question_texts.avatar }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1077,7 +1077,7 @@
                         <tr dragsort-id="avatar_source">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.avatar_source|default:_("Profile picture source") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.avatar_source|default:question_texts.avatar_source }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.avatar_source|default_if_none:question_texts.avatar_source }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1119,7 +1119,7 @@
                         <tr dragsort-id="avatar_license">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.avatar_license|default:_("Profile picture license") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.avatar_license|default:question_texts.avatar_license }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.avatar_license|default_if_none:question_texts.avatar_license }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1161,7 +1161,7 @@
                         <tr dragsort-id="availabilities">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.availabilities|default:_("Availability") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.availabilities|default:question_texts.availabilities }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.availabilities|default_if_none:question_texts.availabilities }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1203,7 +1203,7 @@
                         <tr dragsort-id="additional_speaker">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.additional_speaker|default:_("Additional speakers") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.additional_speaker|default:question_texts.additional_speaker }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.additional_speaker|default_if_none:question_texts.additional_speaker }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1245,7 +1245,7 @@
                         <tr dragsort-id="social_links">
                             <th>
                                 <div class="font-weight-bold">{{ field_labels.social_links|default:_("Social Media") }}</div>
-                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.social_links|default:question_texts.social_links }}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.social_links|default_if_none:question_texts.social_links }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
