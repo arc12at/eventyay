@@ -388,16 +388,21 @@
     border-bottom: 1px solid var(--color-border, #e2e8f0);
 }
 
-.cfp-builtin-field-settings-form .submit-group {
+.cfp-builtin-field-settings-form .submit-group.panel {
     margin-top: 1.5rem;
-    padding-top: 1.25rem;
-    background: transparent;
-    border-top: 1px solid var(--color-border, #e2e8f0);
+    align-items: center;
 }
 
-.cfp-builtin-field-settings-form .submit-group .btn + .btn,
-.cfp-builtin-field-settings-form .submit-group .btn + a.btn,
-.cfp-builtin-field-settings-form .submit-group a.btn + .btn {
-    margin-left: 0.5rem;
+.cfp-field-settings-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.cfp-field-settings-actions .btn + .btn,
+.cfp-field-settings-actions button + button,
+.cfp-field-settings-actions .btn + button,
+.cfp-field-settings-actions button + .btn {
+    margin-left: 0.75rem;
 }
 
