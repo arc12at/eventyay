@@ -1058,18 +1058,13 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
         field_key = self.kwargs['field']
         event = self.request.event
         active_lang = self.request.GET.get('lang') or self.request.LANGUAGE_CODE
-        if active_lang not in event.locales:
-            active_lang = event.locales[0]
+        if not event.locales or active_lang not in event.locales:
+            active_lang = event.locales[0] if event.locales else 'en'
 
         default_label = get_field_default(field_key, 'label', active_lang)
         context['field_key'] = field_key
         context['field_label'] = default_label or field_key.replace('_', ' ').capitalize()
         context['page_title'] = _('Field settings: {field}').format(field=context['field_label'])
-        context['active_lang'] = active_lang
-        context['locales'] = [
-            (loc, dict(settings.LANGUAGES).get(loc, loc))
-            for loc in event.locales
-        ]
         context['back_url'] = reverse(
             'orga:cfp.questions.view',
             kwargs={'organizer': event.organizer.slug, 'event': event.slug},
@@ -1087,9 +1082,7 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
         event = request.event
         flow = CfPFlow(event)
 
-        active_lang = request.POST.get('active_lang') or request.GET.get('lang') or request.LANGUAGE_CODE
-        if active_lang not in event.locales:
-            active_lang = event.locales[0]
+        active_lang = request.POST.get('active_lang') or request.GET.get('lang')
 
         config = copy.deepcopy(event.cfp.settings.get('flow') or {})
         if isinstance(config, str):
@@ -1120,8 +1113,17 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
         elif not isinstance(current_help_texts, dict):
             current_help_texts = {'en': str(current_help_texts)}
 
-        current_labels[active_lang] = get_field_default(field_key, 'label', active_lang)
-        current_help_texts[active_lang] = get_field_default(field_key, 'help_text', active_lang)
+        if active_lang:
+            if active_lang not in event.locales:
+                active_lang = event.locales[0]
+            current_labels[active_lang] = get_field_default(field_key, 'label', active_lang)
+            current_help_texts[active_lang] = get_field_default(field_key, 'help_text', active_lang)
+            redirect_url = f'{request.path}?{urlencode({"lang": active_lang})}'
+        else:
+            for loc in event.locales:
+                current_labels[loc] = get_field_default(field_key, 'label', loc)
+                current_help_texts[loc] = get_field_default(field_key, 'help_text', loc)
+            redirect_url = request.path
 
         field_entry['label'] = current_labels
         field_entry['help_text'] = current_help_texts
@@ -1129,8 +1131,7 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
         flow.save_config(config)
 
         messages.success(request, _('Reset to default values.'))
-        query_string = urlencode({'lang': active_lang})
-        return redirect(f'{request.path}?{query_string}')
+        return redirect(redirect_url)
 
     def form_valid(self, form):
         form.save()

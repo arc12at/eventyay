@@ -947,6 +947,7 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
     help_text = I18nFormField(
         label=_('Help text'),
         widget=I18nTextarea,
+        widget_kwargs={'attrs': {'rows': '2'}},
         required=False,
     )
     enable_gravatar = forms.BooleanField(

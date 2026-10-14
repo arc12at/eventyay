@@ -1,5 +1,6 @@
 {% extends 'orga/base.html' %}
 {% load i18n %}
+{% load bootstrap3 %}
 {% load static %}
 
 {% block extra_title %}{{ page_title }} :: {% endblock extra_title %}
@@ -12,60 +13,31 @@
 {% block content %}
   {% include 'common/includes/header_nav.html' with header_title=page_title %}
 
-  {% if locales|length > 1 %}
-    <ul class="nav nav-tabs mb-3" role="tablist" id="language-tabs">
-      {% for loc, loc_name in locales %}
-        <li class="nav-item {% if loc == active_lang %}active{% endif %}">
-          <a class="nav-link lang-tab-btn {% if loc == active_lang %}active{% endif %}" href="?lang={{ loc }}" data-lang="{{ loc }}" role="tab">
-            {{ loc_name }}
-          </a>
-        </li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-
-  <form method="post">
+  <form method="post" class="form-horizontal cfp-builtin-field-settings-form">
     {% csrf_token %}
-    {% include 'common/forms/errors.html' %}
-
-    <input type="hidden" name="active_lang" id="active_lang" value="{{ active_lang }}">
+    {% bootstrap_form_errors form %}
 
     <fieldset>
-      <legend>{% translate 'Field label' %}</legend>
-      {{ form.label.as_field_group }}
+      <legend>{% translate 'Settings' %}</legend>
+      {% bootstrap_field form.label layout='control' %}
+      {% bootstrap_field form.help_text layout='control' %}
+      {% if form.enable_gravatar %}
+        {% bootstrap_field form.enable_gravatar layout='control' %}
+      {% endif %}
     </fieldset>
 
-    <fieldset>
-      <legend>{% translate 'Help text' %}</legend>
-      {{ form.help_text.as_field_group }}
-    </fieldset>
-
-    {% if form.enable_gravatar %}
-      <fieldset>
-        <legend>{% translate 'Profile picture settings' %}</legend>
-        {{ form.enable_gravatar.as_field_group }}
-      </fieldset>
-    {% endif %}
-
-    <div class="submit-group panel">
-      <span>
-        <a href="{{ back_url }}" class="btn btn-default btn-lg">
+    <div class="form-group submit-group">
+      <div class="col-md-offset-3 col-md-9">
+        <button type="submit" class="btn btn-primary btn-save">
+          {% translate 'Save' %}
+        </button>
+        <a href="{{ back_url }}" class="btn btn-default btn-cancel">
           {% translate 'Back to forms' %}
         </a>
-      </span>
-      <div class="cfp-field-settings-actions">
-        <button type="submit" name="action" value="reset" class="btn btn-outline-info btn-lg mr-2">
+        <button type="submit" name="action" value="reset" class="btn btn-default">
           <i class="fa fa-undo"></i> {% translate 'Reset to default' %}
-        </button>
-        <button type="submit" class="btn btn-success btn-lg">
-          <i class="fa fa-check"></i> {{ phrases.base.save }}
         </button>
       </div>
     </div>
   </form>
 {% endblock content %}
-
-{% block scripts %}
-  {{ block.super }}
-  <script type="module" src="{% static 'orga/js/builtinFieldSettings.js' %}"></script>
-{% endblock scripts %}
