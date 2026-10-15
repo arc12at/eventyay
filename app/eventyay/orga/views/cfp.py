@@ -342,7 +342,7 @@ class CfPForms(EventPermissionRequired, TemplateView):
                                         if val is not None:
                                             field_help_texts[f_key] = val
                                             question_texts[f_key] = val
-        except Exception as e:
+        except (KeyError, AttributeError, TypeError, ValueError, json.JSONDecodeError) as e:
             logger.warning('Failed to parse cfp_flow config for event %s: %s', event.id, e)
 
         context['question_texts'] = question_texts
@@ -1065,6 +1065,11 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
         context['field_key'] = field_key
         context['field_label'] = default_label or field_key.replace('_', ' ').capitalize()
         context['page_title'] = _('Field settings: {field}').format(field=context['field_label'])
+        context['active_lang'] = active_lang
+        context['locales'] = [
+            (loc, dict(settings.LANGUAGES).get(loc, loc))
+            for loc in (event.locales or ['en'])
+        ]
         context['back_url'] = reverse(
             'orga:cfp.questions.view',
             kwargs={'organizer': event.organizer.slug, 'event': event.slug},
@@ -1093,7 +1098,15 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
         step_data = steps.setdefault(step_id, {})
         fields_list = step_data.setdefault('fields', [])
         if isinstance(fields_list, dict):
-            fields_list = list(fields_list.values())
+            converted = []
+            for k, v in fields_list.items():
+                if isinstance(v, dict):
+                    v = copy.deepcopy(v)
+                    v.setdefault('key', k)
+                    converted.append(v)
+                else:
+                    converted.append({'key': k})
+            fields_list = converted
             step_data['fields'] = fields_list
 
         field_entry = next((f for f in fields_list if isinstance(f, dict) and f.get('key') == field_key), None)
@@ -1101,29 +1114,28 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
             field_entry = {'key': field_key}
             fields_list.append(field_entry)
 
+        fallback_loc = event.locales[0] if event.locales else 'en'
         current_labels = field_entry.get('label') or {}
         if isinstance(current_labels, LazyI18nString):
             current_labels = copy.deepcopy(current_labels.data)
         elif not isinstance(current_labels, dict):
-            current_labels = {'en': str(current_labels)}
+            current_labels = {fallback_loc: str(current_labels)}
 
         current_help_texts = field_entry.get('help_text') or {}
         if isinstance(current_help_texts, LazyI18nString):
             current_help_texts = copy.deepcopy(current_help_texts.data)
         elif not isinstance(current_help_texts, dict):
-            current_help_texts = {'en': str(current_help_texts)}
+            current_help_texts = {fallback_loc: str(current_help_texts)}
 
-        if active_lang:
-            if active_lang not in event.locales:
-                active_lang = event.locales[0]
-            current_labels[active_lang] = get_field_default(field_key, 'label', active_lang)
-            current_help_texts[active_lang] = get_field_default(field_key, 'help_text', active_lang)
-            redirect_url = f'{request.path}?{urlencode({"lang": active_lang})}'
-        else:
-            for loc in event.locales:
-                current_labels[loc] = get_field_default(field_key, 'label', loc)
-                current_help_texts[loc] = get_field_default(field_key, 'help_text', loc)
-            redirect_url = request.path
+        if not active_lang or active_lang not in (event.locales or []):
+            active_lang = (
+                request.LANGUAGE_CODE
+                if event.locales and request.LANGUAGE_CODE in event.locales
+                else (event.locales[0] if event.locales else 'en')
+            )
+        current_labels[active_lang] = get_field_default(field_key, 'label', active_lang)
+        current_help_texts[active_lang] = get_field_default(field_key, 'help_text', active_lang)
+        redirect_url = f'{request.path}?{urlencode({"lang": active_lang})}'
 
         field_entry['label'] = current_labels
         field_entry['help_text'] = current_help_texts

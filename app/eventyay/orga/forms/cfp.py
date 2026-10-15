@@ -2,6 +2,7 @@ import copy
 import json
 
 from django import forms
+from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -950,6 +951,23 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
         required=False,
     )
 
+    def clean_help_text(self):
+        val = self.cleaned_data.get('help_text')
+        if not val:
+            return val
+        if isinstance(val, LazyI18nString):
+            sanitized = {
+                k: sanitize_rich_text(v) if v else v
+                for k, v in val.data.items()
+            }
+            return LazyI18nString(sanitized)
+        if isinstance(val, dict):
+            return {
+                k: sanitize_rich_text(v) if v else v
+                for k, v in val.items()
+            }
+        return sanitize_rich_text(str(val))
+
     def __init__(self, *args, event, field_key, **kwargs):
         self.event = event
         self.field_key = field_key
@@ -1022,7 +1040,15 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
         step_data = steps.setdefault(step_id, {})
         fields_list = step_data.setdefault('fields', [])
         if isinstance(fields_list, dict):
-            fields_list = list(fields_list.values())
+            converted = []
+            for k, v in fields_list.items():
+                if isinstance(v, dict):
+                    v = copy.deepcopy(v)
+                    v.setdefault('key', k)
+                    converted.append(v)
+                else:
+                    converted.append({'key': k})
+            fields_list = converted
             step_data['fields'] = fields_list
 
         field_entry = next((f for f in fields_list if isinstance(f, dict) and f.get('key') == self.field_key), None)
@@ -1067,12 +1093,12 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
         )
         for loc in self.event.locales:
             if loc in submitted_help_text:
-                existing_help_text[loc] = submitted_help_text[loc]
+                val = submitted_help_text[loc]
+                existing_help_text[loc] = sanitize_rich_text(val) if val else val
         field_entry['help_text'] = existing_help_text
 
-        flow.save_config(config)
-
-        if self.field_key == 'avatar' and 'enable_gravatar' in self.cleaned_data:
-            self.event.cfp.settings['cfp_enable_gravatar'] = self.cleaned_data['enable_gravatar']
-            self.event.cfp.save(update_fields=['settings'])
+        with transaction.atomic():
+            if self.field_key == 'avatar' and 'enable_gravatar' in self.cleaned_data:
+                self.event.cfp.settings['cfp_enable_gravatar'] = self.cleaned_data['enable_gravatar']
+            flow.save_config(config)
 

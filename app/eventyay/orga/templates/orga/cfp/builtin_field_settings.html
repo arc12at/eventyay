@@ -13,9 +13,23 @@
 {% block content %}
   {% include 'common/includes/header_nav.html' with header_title=page_title %}
 
+  {% if locales|length > 1 %}
+    <ul class="nav nav-tabs mb-3" role="tablist" id="language-tabs">
+      {% for loc, loc_name in locales %}
+        <li class="nav-item {% if loc == active_lang %}active{% endif %}">
+          <a class="nav-link lang-tab-btn {% if loc == active_lang %}active{% endif %}" href="?lang={{ loc }}" data-lang="{{ loc }}" role="tab">
+            {{ loc_name }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
   <form method="post" class="form-horizontal cfp-builtin-field-settings-form">
     {% csrf_token %}
     {% bootstrap_form_errors form %}
+
+    <input type="hidden" name="active_lang" id="active_lang" value="{{ active_lang }}">
 
     <fieldset>
       <legend>{% translate 'Settings' %}</legend>
@@ -43,3 +57,8 @@
     </div>
   </form>
 {% endblock content %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script type="module" src="{% static 'orga/js/builtinFieldSettings.js' %}"></script>
+{% endblock scripts %}

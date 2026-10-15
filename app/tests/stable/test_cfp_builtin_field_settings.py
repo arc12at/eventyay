@@ -325,3 +325,222 @@ def test_builtin_field_settings_invalid_active_lang_fallback(organizer_client, e
     response = organizer_client.post(url, post_data)
     assert response.status_code == 302
     assert response.url.endswith(url + f'?lang={event.locales[0]}')
+
+
+def test_builtin_field_settings_help_text_sanitized(event):
+    """Verify malicious script/handlers in custom help text are sanitized on form save."""
+    post_data = {
+        'label_0': 'Session Abstract',
+        'help_text_0': '<script>alert("xss")</script><p>Safe explanation</p><img src=x onerror=alert(1)>',
+    }
+    form = CfPBuiltinFieldSettingsForm(event=event, field_key='abstract', data=post_data)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.cfp.refresh_from_db()
+    flow_config = event.cfp.settings.get('flow', {})
+    fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
+    abstract_field = next((f for f in fields if f.get('key') == 'abstract'), None)
+    assert abstract_field is not None
+    saved_help = abstract_field['help_text']['en']
+    assert '<script>' not in saved_help
+    assert 'onerror' not in saved_help
+    assert 'Safe explanation' in saved_help
+
+
+def test_profile_step_social_links_help_text_sanitized(event, rf):
+    """Verify ProfileStep sanitizes malicious script in social links help text."""
+    event.__dict__.pop('cfp_flow', None)
+    event.cfp.settings['flow'] = {
+        'steps': {
+            'profile': {
+                'fields': [
+                    {
+                        'key': 'social_links',
+                        'label': {'en': 'Socials'},
+                        'help_text': {'en': '<script>alert("pwned")</script>Connect with us'},
+                    }
+                ]
+            }
+        }
+    }
+    event.cfp.settings['cfp_request_social_links'] = True
+    event.cfp.save(update_fields=['settings'])
+
+    request = rf.get('/cfp/')
+    request.user = AnonymousUser()
+    request.event = event
+    request.LANGUAGE_CODE = 'en'
+    step = ProfileStep(event)
+    step.request = request
+    step.cfp_session = {'data': {}, 'files': {}}
+    context = step.get_context_data()
+    assert '<script>' not in context['social_links_help_text']
+    assert 'Connect with us' in context['social_links_help_text']
+
+
+def test_builtin_field_settings_dict_fields_mapping_keys_preserved(event):
+    """Verify steps using dict mapping for fields retain existing field settings on save and reset."""
+    event.cfp.settings['flow'] = {
+        'steps': {
+            'info': {
+                'fields': {
+                    'title': {'label': {'en': 'Existing Title'}, 'request': 'required'},
+                    'abstract': {'label': {'en': 'Existing Abstract'}, 'request': 'optional'},
+                }
+            }
+        }
+    }
+    event.cfp.save(update_fields=['settings'])
+
+    post_data = {
+        'label_0': 'Brand New Title',
+        'help_text_0': 'Title help',
+    }
+    form = CfPBuiltinFieldSettingsForm(event=event, field_key='title', data=post_data)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.cfp.refresh_from_db()
+    flow_config = event.cfp.settings.get('flow', {})
+    fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
+    # Verify abstract field is NOT lost
+    abstract_field = next((f for f in fields if f.get('key') == 'abstract'), None)
+    assert abstract_field is not None
+    assert abstract_field['label']['en'] == 'Existing Abstract'
+
+    # Verify title was updated
+    title_field = next((f for f in fields if f.get('key') == 'title'), None)
+    assert title_field is not None
+    assert title_field['label']['en'] == 'Brand New Title'
+
+
+def test_builtin_field_settings_identical_translations_preserved(event):
+    """Verify intentionally identical translations across locales are preserved and not overwritten with gettext."""
+    event.locale_array = 'en,de'
+    event.save()
+    event.__dict__.pop('locales', None)
+
+    lang_codes = [l[0] for l in settings.LANGUAGES]
+    en_idx = lang_codes.index('en')
+    de_idx = lang_codes.index('de')
+
+    post_data = {
+        f'label_{en_idx}': 'Track',
+        f'label_{de_idx}': 'Track',
+        f'help_text_{en_idx}': 'Choose your track',
+        f'help_text_{de_idx}': 'Choose your track',
+    }
+    form = CfPBuiltinFieldSettingsForm(event=event, field_key='track', data=post_data)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.cfp.refresh_from_db()
+    flow_config = event.cfp.settings.get('flow', {})
+    fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
+    track_field = next((f for f in fields if f.get('key') == 'track'), None)
+    assert track_field is not None
+    assert track_field['label']['en'] == 'Track'
+    assert track_field['label']['de'] == 'Track'
+    assert track_field['help_text']['en'] == 'Choose your track'
+    assert track_field['help_text']['de'] == 'Choose your track'
+
+
+def test_builtin_field_settings_avatar_gravatar_atomic_save(event, monkeypatch):
+    """Verify avatar flow config and gravatar setting are committed atomically."""
+    event.cfp.settings['cfp_enable_gravatar'] = False
+    event.cfp.save(update_fields=['settings'])
+
+    post_data = {
+        'label_0': 'My Avatar',
+        'help_text_0': 'Upload avatar',
+        'enable_gravatar': True,
+    }
+    form = CfPBuiltinFieldSettingsForm(event=event, field_key='avatar', data=post_data)
+    assert form.is_valid()
+
+    def failing_save_config(*args, **kwargs):
+        raise RuntimeError('Simulated database write failure')
+
+    monkeypatch.setattr(CfPFlow, 'save_config', failing_save_config)
+    with pytest.raises(RuntimeError):
+        form.save()
+
+    event.cfp.refresh_from_db()
+    assert event.cfp.enable_gravatar is False
+
+
+def test_builtin_field_settings_reset_to_default_without_active_lang(organizer_client, event):
+    """Verify reset without active_lang resets only the active language and does not wipe other locales."""
+    event.locale_array = 'en,de'
+    event.save()
+    event.__dict__.pop('locales', None)
+    url = reverse(
+        'orga:cfp.field.settings',
+        kwargs={'organizer': event.organizer.slug, 'event': event.slug, 'field': 'title'},
+    )
+
+    lang_codes = [l[0] for l in settings.LANGUAGES]
+    en_idx = lang_codes.index('en')
+    de_idx = lang_codes.index('de')
+    post_data = {
+        f'label_{en_idx}': 'Custom Title EN',
+        f'label_{de_idx}': 'Custom Title DE',
+        f'help_text_{en_idx}': 'Custom Help EN',
+        f'help_text_{de_idx}': 'Custom Help DE',
+    }
+    organizer_client.post(url, post_data)
+
+    reset_response = organizer_client.post(url, {'action': 'reset'})
+    assert reset_response.status_code == 302
+
+    event.cfp.refresh_from_db()
+    flow_config = event.cfp.settings.get('flow', {})
+    fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
+    title_field = next((f for f in fields if f.get('key') == 'title'), None)
+    assert title_field is not None
+
+    default_en_label = get_field_default('title', 'label', 'en')
+    assert title_field['label']['en'] == default_en_label
+    assert title_field['label']['de'] == 'Custom Title DE'
+
+
+def test_builtin_field_settings_template_tabs_and_active_lang(organizer_client, event):
+    """Verify multilingual event renders language tabs, hidden active_lang, and script."""
+    event.locale_array = 'en,de'
+    event.save()
+    event.__dict__.pop('locales', None)
+    url = reverse(
+        'orga:cfp.field.settings',
+        kwargs={'organizer': event.organizer.slug, 'event': event.slug, 'field': 'title'},
+    )
+    response = organizer_client.get(url)
+    assert response.status_code == 200
+    content = response.content.decode()
+
+    assert 'id="language-tabs"' in content
+    assert 'lang-tab-btn' in content
+    assert 'name="active_lang"' in content
+    assert 'id="active_lang"' in content
+    assert 'builtinFieldSettings.js' in content
+
+
+def test_builtin_field_settings_non_english_fallback_locale(organizer_client, event):
+    """Verify event configured only in German derives fallback locale as 'de'."""
+    event.locale_array = 'de'
+    event.save()
+    event.__dict__.pop('locales', None)
+    url = reverse(
+        'orga:cfp.field.settings',
+        kwargs={'organizer': event.organizer.slug, 'event': event.slug, 'field': 'title'},
+    )
+    response = organizer_client.post(url, {'action': 'reset'})
+    assert response.status_code == 302
+
+    event.cfp.refresh_from_db()
+    flow_config = event.cfp.settings.get('flow', {})
+    fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
+    title_field = next((f for f in fields if f.get('key') == 'title'), None)
+    assert title_field is not None
+    assert 'de' in title_field['label']
+

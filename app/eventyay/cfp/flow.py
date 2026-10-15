@@ -32,6 +32,7 @@ from eventyay.base.models import (
 from eventyay.cfp.signals import cfp_steps
 from eventyay.common.exceptions import SendMailException
 from eventyay.common.language import language
+from eventyay.common.sanitizers import sanitize_rich_text
 from eventyay.common.social_links import get_social_link_value
 from eventyay.common.text.phrases import phrases
 from eventyay.person.forms import (
@@ -183,7 +184,7 @@ def get_field_default(field_key: str, attr: str, locale: str) -> str:
 
 
 
-def i18n_string(data, locales):
+def i18n_string(data, locales, preserve_identical=False):
     if isinstance(data, LazyI18nString):
         return data
     data = copy.deepcopy(data)
@@ -198,10 +199,12 @@ def i18n_string(data, locales):
 
     for locale in locales:
         if locale != 'en':
+            if preserve_identical and locale in data and data[locale] is not None:
+                continue
             stored = data.get(locale, '')
             # Re-evaluate if missing OR if the stored value is identical to English,
             # which indicates a failed gettext lookup that was cached as a fallback.
-            if not stored or stored == english:
+            if not stored or (not preserve_identical and stored == english):
                 with language(locale):
                     translation = gettext(english)
                     if translation != english:
@@ -967,6 +970,9 @@ class ProfileStep(GenericFlowStep, FormFlowStep):
         if social_links_help_text is None:
             social_links_help_text = get_field_default('social_links', 'help_text', self.request.LANGUAGE_CODE)
 
+        if social_links_help_text:
+            social_links_help_text = sanitize_rich_text(str(social_links_help_text))
+
         result['social_links_label'] = social_links_label
         result['social_links_help_text'] = social_links_help_text
         return result
@@ -1142,10 +1148,11 @@ class CfPFlow:
                         {
                             'widget': field.widget.__class__.__name__,
                             'key': key,
-                            'label': i18n_string(field.label, locales),
+                            'label': i18n_string(field.label, locales, preserve_identical=True),
                             'help_text': i18n_string(
                                 getattr(field, 'original_help_text', field.help_text),
                                 locales,
+                                preserve_identical=True,
                             ),
                             'added_help_text': i18n_string(
                                 getattr(field, 'added_help_text', ''),
@@ -1195,7 +1202,9 @@ class CfPFlow:
             for key in ('help_text', 'request', 'required', 'key', 'label'):
                 if key in config_field:
                     field[key] = (
-                        i18n_string(config_field[key], locales) if key in ('help_text', 'label') else config_field[key]
+                        i18n_string(config_field[key], locales, preserve_identical=True)
+                        if key in ('help_text', 'label')
+                        else config_field[key]
                     )
             step_config['fields'].append(field)
         return step_config
