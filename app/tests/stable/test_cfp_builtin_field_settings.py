@@ -505,8 +505,8 @@ def test_builtin_field_settings_reset_to_default_without_active_lang(organizer_c
     assert title_field['label']['de'] == 'Custom Title DE'
 
 
-def test_builtin_field_settings_template_tabs_and_active_lang(organizer_client, event):
-    """Verify multilingual event renders language tabs, hidden active_lang, and script."""
+def test_builtin_field_settings_template_stacked_locales_and_active_lang(organizer_client, event):
+    """Verify multilingual event renders all language inputs stacked simultaneously."""
     event.locale_array = 'en,de'
     event.save()
     event.__dict__.pop('locales', None)
@@ -518,11 +518,11 @@ def test_builtin_field_settings_template_tabs_and_active_lang(organizer_client, 
     assert response.status_code == 200
     content = response.content.decode()
 
-    assert 'id="language-tabs"' in content
-    assert 'lang-tab-btn' in content
+    # Form renders both locale inputs simultaneously
+    assert 'lang="en"' in content
+    assert 'lang="de"' in content
     assert 'name="active_lang"' in content
     assert 'id="active_lang"' in content
-    assert 'builtinFieldSettings.js' in content
 
 
 def test_builtin_field_settings_non_english_fallback_locale(organizer_client, event):
