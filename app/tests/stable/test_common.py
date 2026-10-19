@@ -1,9 +1,9 @@
 """
 Tests for common pages and utilities (redirects, CSP reporting, etc).
 """
-import pytest
 import json
 
+import pytest
 from django.urls import reverse
 
 from eventyay.common.views.redirect import safe_next, safelink
@@ -46,7 +46,10 @@ class TestCommonPages:
         """Local URLs are not wrapped."""
         assert safelink('/common/') == '/common/'
 
-    @pytest.mark.parametrize('url', [None, '', '//example.org/x', 'javascript:alert(1)', 'http://[bad'])
+    @pytest.mark.parametrize(
+        'url',
+        [None, '', '//example.org/x', 'javascript:alert(1)', 'http://[bad', 'http://', 'http:///path', 'https:'],
+    )
     def test_safe_next_rejects_unsafe(self, url):
         """Unsafe redirect targets fall back to the caller's default."""
         assert safe_next(url) is None

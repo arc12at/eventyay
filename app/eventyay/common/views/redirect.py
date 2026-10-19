@@ -38,7 +38,8 @@ def safe_next(url: str | None) -> str | None:
     anything else (``//host``, ``javascript:``, empty) returns ``None`` so callers use their default.
     """
     try:
-        offsite = bool(url) and urllib.parse.urlparse(url).scheme in ('http', 'https')
+        parsed = urllib.parse.urlparse(url) if url else None
+        offsite = bool(parsed and parsed.scheme in ('http', 'https') and parsed.hostname)
     except ValueError:
         return None
     if url and (url_has_allowed_host_and_scheme(url, allowed_hosts=None) or offsite):
