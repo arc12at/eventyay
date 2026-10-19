@@ -8,11 +8,11 @@ from django.conf import settings
 from django.contrib import messages
 from django.http import HttpRequest, HttpResponseRedirect
 from django.urls import reverse
-from django.utils.http import url_has_allowed_host_and_scheme
 from pydantic import ValidationError
 
 from eventyay.base.auth import SPAM_ACCOUNT_ERROR, get_auth_backends
 from eventyay.common.consts import KEY_LAST_FORCE_LOGIN, KEY_LONG_SESSION, KEY_SOCIAL_KEEP_LOGGED_IN
+from eventyay.common.views.redirect import safe_next
 from eventyay.plugins.socialauth.schemas.oauth2_params import OAuth2Params
 
 
@@ -38,8 +38,8 @@ class CustomAccountAdapter(DefaultAccountAdapter):
             auth_url = reverse('eventyay_common:oauth2_provider.authorize')
             return f'{auth_url}?{urlencode(validated_oauth2_params.model_dump())}'
 
-        next_url = request.session.pop('socialauth_next_url', None)
-        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+        next_url = safe_next(request.session.pop('socialauth_next_url', None))
+        if next_url:
             return next_url
 
         return super().get_login_redirect_url(request)

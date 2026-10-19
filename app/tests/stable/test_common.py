@@ -6,16 +6,55 @@ import json
 
 from django.urls import reverse
 
+from eventyay.common.views.redirect import safe_next, safelink
+
 
 @pytest.mark.django_db
 class TestCommonPages:
     """Test common utility endpoints."""
 
-    def test_redirect_endpoint_exists(self, client):
-        """Test redirect utility endpoint."""
-        response = client.get(reverse('redirect'))
-        # Should handle redirect requests - returns 400 without proper params
-        assert response.status_code in [200, 302, 400]
+    def test_redirect_renders_interstitial(self, client):
+        """A signed off-site URL renders the interstitial, even with a same-site referer."""
+        url = 'https://example.org/a?b=1'
+        response = client.get(safelink(url), HTTP_REFERER='http://testserver/')
+        assert response.status_code == 200
+        content = response.content.decode()
+        assert 'example.org' in content
+        assert 'https://example.org/a?b=1' in content
+        assert 'You are leaving Eventyay and being redirected to an external website.' in content
+        assert 'You are being redirected to' in content
+        assert 'Continue to External Site' in content
+        assert 'Cancel / Return to Dashboard' in content
+        assert reverse('eventyay_common:dashboard') in content
+
+    def test_redirect_escapes_hostname(self, client):
+        """A crafted hostname is shown escaped, never as markup."""
+        response = client.get(safelink('https://<b>x/'))
+        assert response.status_code == 200
+        assert '<b>x' not in response.content.decode()
+
+    @pytest.mark.parametrize('url', ['javascript:alert(1)', 'data:text/html,x', 'ftp://example.org'])
+    def test_redirect_rejects_bad_scheme(self, client, url):
+        """Non-http(s) targets are rejected, so they never become a clickable link."""
+        assert client.get(safelink(url)).status_code == 400
+
+    def test_redirect_rejects_unsigned(self, client):
+        """An unsigned target is rejected."""
+        assert client.get(reverse('redirect'), {'url': 'https://example.org'}).status_code == 400
+
+    def test_safelink_passes_local_urls(self):
+        """Local URLs are not wrapped."""
+        assert safelink('/common/') == '/common/'
+
+    @pytest.mark.parametrize('url', [None, '', '//example.org/x', 'javascript:alert(1)'])
+    def test_safe_next_rejects_unsafe(self, url):
+        """Unsafe redirect targets fall back to the caller's default."""
+        assert safe_next(url) is None
+
+    def test_safe_next_routes_offsite_through_interstitial(self):
+        """Local targets pass through; off-site http(s) targets go through the interstitial."""
+        assert safe_next('/common/organizers/') == '/common/organizers/'
+        assert safe_next('https://example.org/x').startswith(reverse('redirect') + '?url=')
 
     def test_csp_report_endpoint(self, client):
         """Test CSP report endpoint accepts POST with valid JSON."""

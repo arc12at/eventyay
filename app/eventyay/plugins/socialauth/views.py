@@ -9,7 +9,6 @@ from django.contrib import messages
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import TemplateView, View
 from pydantic import ValidationError
@@ -17,6 +16,7 @@ from pydantic import ValidationError
 from eventyay.base.operational_logging import OUTCOME_FAILURE, log_event
 from eventyay.base.settings import GlobalSettingsObject
 from eventyay.common.consts import KEY_SOCIAL_KEEP_LOGGED_IN
+from eventyay.common.views.redirect import safe_next
 from eventyay.control.permissions import AdministratorPermissionRequiredMixin
 
 from .schemas.login_providers import LoginProviders
@@ -30,7 +30,7 @@ class OAuthLoginView(View):
         self.set_oauth2_params(request)
 
         next_url = request.GET.get('next', '')
-        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+        if safe_next(next_url):
             request.session['socialauth_next_url'] = next_url
 
         gs = GlobalSettingsObject()

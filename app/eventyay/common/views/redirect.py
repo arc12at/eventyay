@@ -1,54 +1,45 @@
-import logging
 import urllib.parse
 
 from django.core import signing
-from django.http import (
-    HttpRequest,
-    HttpResponse,
-    HttpResponseBadRequest,
-    HttpResponseRedirect,
-)
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
-logger = logging.getLogger(__name__)
 
-
-def _is_samesite_referer(request: HttpRequest) -> bool:
-    referer = request.headers.get('referer')
-    if referer is None:
-        return False
-
-    referer = urllib.parse.urlparse(referer)
-
-    # Make sure we have a valid URL for Referer.
-    if '' in (referer.scheme, referer.netloc):
-        return False
-
-    return (referer.scheme, referer.netloc) == (request.scheme, request.get_host())
+SIGNER = signing.Signer(salt='safe-redirect')
 
 
 def redirect_view(request: HttpRequest) -> HttpResponse:
-    signer = signing.Signer(salt='safe-redirect')
+    """Show the 'leaving Eventyay' interstitial; never redirect off-site without a click."""
     try:
-        url = signer.unsign(request.GET.get('url', ''))
+        url = SIGNER.unsign(request.GET.get('url', ''))
     except signing.BadSignature:
         return HttpResponseBadRequest('Invalid parameter')
-
-    if not _is_samesite_referer(request):
-        u = urllib.parse.urlparse(url)
-        return render(
-            request,
-            'common/redirect.html',
-            {
-                'hostname': u.hostname,
-                'url': url,
-            },
-        )
-    return HttpResponseRedirect(url)
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ('http', 'https') or not parsed.hostname:
+        return HttpResponseBadRequest('Invalid parameter')
+    response = render(request, 'common/redirect.html', {'hostname': parsed.hostname, 'url': url})
+    response['X-Robots-Tag'] = 'noindex'
+    return response
 
 
 def safelink(url: str) -> str:
-    """Wrap a URL with our redirect view to check if the user is about to go to external site."""
-    signer = signing.Signer(salt='safe-redirect')
-    return reverse('redirect') + '?url=' + urllib.parse.quote(signer.sign(url))
+    """Route off-site URLs through the interstitial; local URLs pass through unchanged."""
+    if url_has_allowed_host_and_scheme(url, allowed_hosts=None):
+        return url
+    return reverse('redirect') + '?url=' + urllib.parse.quote(SIGNER.sign(url))
+
+
+def safe_next(url: str | None) -> str | None:
+    """Validate a ``next``-style redirect parameter.
+
+    Local URLs are returned as-is, off-site http(s) URLs are routed through the interstitial,
+    anything else (``//host``, ``javascript:``, empty) returns ``None`` so callers use their default.
+    """
+    if url and (
+        url_has_allowed_host_and_scheme(url, allowed_hosts=None)
+        or urllib.parse.urlparse(url).scheme in ('http', 'https')
+    ):
+        return safelink(url)
+    return None

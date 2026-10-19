@@ -15,7 +15,8 @@ import eventyay.control.urls
 import eventyay.eventyay_common.urls
 import eventyay.presale.urls
 from eventyay.api.views.stripe import stripe_webhook_view
-from eventyay.base.views import cachedfiles, csp, health, js_catalog, js_helpers, metrics, redirect
+from eventyay.base.views import cachedfiles, csp, health, js_catalog, js_helpers, metrics
+from eventyay.common.views import redirect_view
 from eventyay.control.views import pages
 from eventyay.eventyay_common.views import auth
 from eventyay.eventyay_common.views.custom import ConfirmEmailView, SignupView
@@ -69,7 +70,7 @@ base_patterns = [
         name='cachedfile.download',
     ),
     path('healthcheck/', health.healthcheck, name='healthcheck'),
-    path('redirect/', redirect.redir_view, name='redirect'),
+    path('redirect/', redirect_view, name='redirect'),
     path(
         'jsi18n/<slug:lang>/',
         js_catalog.js_catalog,
