@@ -11,6 +11,10 @@ footer {
 	text-align: center;
 	padding: 10px 0;
 	font-size: 11px;
+
+	.footer-links {
+		margin-top: 20px;
+	}
 }
 
 /* No sidebar toggle on auth pages: align the brand with the logged-out front page. */
@@ -120,3 +124,24 @@ body.auth-page nav.navbar .navbar-header > .navbar-brand {
 
 @import "../../pretixbase/scss/_rtl.scss";
 @import "../../bootstrap/scss/_rtl.scss";
+
+.redirect-card {
+	max-width: 560px;
+
+	.buttons {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 10px;
+
+		@media (max-width: $screen-xs-max) {
+			.btn {
+				width: 100%;
+			}
+		}
+	}
+}
+
+.redirect-url {
+	overflow-wrap: anywhere;
+}

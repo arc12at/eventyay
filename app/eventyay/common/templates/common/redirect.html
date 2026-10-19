@@ -1,26 +1,19 @@
-{% extends "common/error.html" %}
-
+{% extends "eventyay_common/auth/base.html" %}
 {% load i18n %}
-
-{% block title %}{% translate "You are leaving Eventyay" %}{% endblock title %}
-
-{% block error_image %}<i class="fa fa-external-link fa-fw big-icon"></i>{% endblock error_image %}
-
 {% block content %}
-    <div class="error-details">
-        <h1>{% translate "You are leaving Eventyay and being redirected to an external website." %}</h1>
-        <h3>
-            {% translate "You are being redirected to" %} <strong>{{ hostname }}</strong>
-        </h3>
-        <p class="redirect-url"><code>{{ url }}</code></p>
-        <p>{% translate "Only continue if you trust this website." %}</p>
-        <p class="redirect-actions">
-            <a href="{{ url }}" class="btn btn-white btn-lg" rel="noopener noreferrer">
-                {% translate "Continue to External Site" %}
-            </a>
-            <a href="{% url 'eventyay_common:dashboard' %}" class="btn btn-outline-white btn-lg">
+    <div class="form-signin redirect-card">
+        <h3>{% translate "You are leaving Eventyay" %}</h3>
+        <p>{% translate "You are leaving Eventyay and being redirected to an external website." %}</p>
+        <p>{% translate "You are being redirected to" %} <strong>{{ hostname }}</strong></p>
+        <div class="well well-sm redirect-url">{{ url }}</div>
+        <p class="text-muted">{% translate "Only continue if you trust this website." %}</p>
+        <div class="form-group buttons">
+            <a href="{% url 'eventyay_common:dashboard' %}" class="btn btn-default">
                 {% translate "Cancel / Return to Dashboard" %}
             </a>
-        </p>
+            <a href="{{ url }}" class="btn btn-primary" rel="noopener noreferrer">
+                {% translate "Continue to External Site" %}
+            </a>
+        </div>
     </div>
-{% endblock content %}
+{% endblock %}

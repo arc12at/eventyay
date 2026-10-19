@@ -63,14 +63,3 @@ body a:not(.btn):hover {
   color: var(--color-primary);
   text-decoration: none;
 }
-
-.redirect-url code {
-  overflow-wrap: anywhere;
-}
-
-.redirect-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1rem;
-}
