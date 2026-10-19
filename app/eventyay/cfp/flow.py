@@ -81,39 +81,39 @@ FIELD_STEP_MAP = {
 FIELD_DEFAULTS = {
     'title': {
         'label': _('Title'),
-        'help_text': _('Proposal title'),
+        'help_text': '',
     },
     'submission_type': {
         'label': _('Session type'),
-        'help_text': _('Session type'),
+        'help_text': '',
     },
     'abstract': {
         'label': _('Abstract'),
-        'help_text': _('Abstract'),
+        'help_text': phrases.base.use_markdown,
     },
     'description': {
         'label': _('Description'),
-        'help_text': _('Description'),
+        'help_text': phrases.base.use_markdown,
     },
     'notes': {
         'label': _('Notes'),
-        'help_text': _('Notes'),
+        'help_text': _('These notes are meant for the organiser and won’t be made public.'),
     },
     'track': {
         'label': _('Track'),
-        'help_text': _('Track'),
+        'help_text': '',
     },
     'duration': {
         'label': _('Duration'),
-        'help_text': _('Duration'),
+        'help_text': _('The duration in minutes.'),
     },
     'slot_count': {
         'label': _('Slot Count'),
-        'help_text': _('Slot Count'),
+        'help_text': _('How many times this session will take place.'),
     },
     'content_locale': {
         'label': _('Language'),
-        'help_text': _('Language'),
+        'help_text': '',
     },
     'image': {
         'label': _('Session image'),
@@ -121,7 +121,7 @@ FIELD_DEFAULTS = {
     },
     'slides': {
         'label': _('Slides'),
-        'help_text': _('Slides'),
+        'help_text': '',
     },
     'do_not_record': {
         'label': _('Recording opt-out'),
@@ -129,11 +129,11 @@ FIELD_DEFAULTS = {
     },
     'fullname': {
         'label': _('Full Name'),
-        'help_text': _('Full name'),
+        'help_text': '',
     },
     'biography': {
         'label': _('Biography'),
-        'help_text': _('Biography'),
+        'help_text': phrases.base.use_markdown,
     },
     'job_title': {
         'label': _('Job title/role'),
@@ -145,19 +145,19 @@ FIELD_DEFAULTS = {
     },
     'avatar': {
         'label': _('Profile picture'),
-        'help_text': _('Profile picture'),
+        'help_text': '',
     },
     'avatar_source': {
         'label': _('Profile picture source'),
-        'help_text': _('Profile Picture Source'),
+        'help_text': _('Please enter the name of the author or source of image and a link if applicable.'),
     },
     'avatar_license': {
         'label': _('Profile picture license'),
-        'help_text': _('Profile Picture License'),
+        'help_text': _('Please enter the name of the license of the photo and link to it if applicable.'),
     },
     'availabilities': {
         'label': _('Availability'),
-        'help_text': _('Availability'),
+        'help_text': '',
     },
     'additional_speaker': {
         'label': _('Additional Speaker'),
@@ -169,7 +169,7 @@ FIELD_DEFAULTS = {
     },
     'social_links': {
         'label': _('Social Media'),
-        'help_text': _('Social Media'),
+        'help_text': '',
     },
 }
 
@@ -503,7 +503,7 @@ class FormFlowStep(TemplateFlowStep):
                     'charset': field_file.charset,
                 })
                 new_uploads.append(field_file)
-            
+
             if new_entries:
                 if field.endswith('_files'):
                     current = existing.get(field, [])
@@ -517,23 +517,23 @@ class FormFlowStep(TemplateFlowStep):
                             self.file_storage.delete(old_entry['tmp_name'])
                         except Exception:
                             pass
-                    
+
                     existing[field] = new_entries if len(new_entries) > 1 else new_entries[0]
                     if hasattr(form, 'initial'):
                         form.initial[field] = SimpleNamespace(
                             name=new_entries[0]['name'],
                             url=self.file_storage.url(new_entries[0]['tmp_name'])
                         )
-            
+
             if new_uploads:
                 form.files.setlist(field, new_uploads)
             else:
                 del form.files[field]
-                
+
             # ALWAYS invalidate the bound field cache so the widget re-renders correctly.
             if hasattr(form, '_bound_fields_cache'):
                 form._bound_fields_cache.pop(field, None)
-                
+
         self.cfp_session['files'][self.identifier] = existing
 
     def post(self, request):
@@ -635,7 +635,7 @@ class FormFlowStep(TemplateFlowStep):
                             file_entries.append(entry)
                             break
                     continue
-                
+
                 tmp_filename = self.file_storage.save(field_file.name, field_file)
                 file_entries.append(
                     {
@@ -646,7 +646,7 @@ class FormFlowStep(TemplateFlowStep):
                         'charset': field_file.charset,
                     }
                 )
-            
+
             if file_entries:
                 data[field] = file_entries if len(file_entries) > 1 else file_entries[0]
         self.cfp_session['files'][self.identifier] = data

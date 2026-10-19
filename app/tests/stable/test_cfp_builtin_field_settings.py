@@ -1,6 +1,7 @@
 import pytest
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django_scopes import scopes_disabled
 
@@ -17,6 +18,17 @@ def _disable_scopes():
 def test_field_step_map_and_defaults_coverage():
     """Verify all 22 built-in fields are mapped and have defaults."""
     assert len(FIELD_STEP_MAP) == 22
+    fields_without_help_text = {
+        'title',
+        'submission_type',
+        'track',
+        'content_locale',
+        'slides',
+        'fullname',
+        'avatar',
+        'availabilities',
+        'social_links',
+    }
     for field_key, step in FIELD_STEP_MAP.items():
         assert step in ('info', 'profile')
         assert field_key in FIELD_DEFAULTS
@@ -26,7 +38,11 @@ def test_field_step_map_and_defaults_coverage():
         label = get_field_default(field_key, 'label', 'en')
         help_text = get_field_default(field_key, 'help_text', 'en')
         assert isinstance(label, str) and len(label) > 0
-        assert isinstance(help_text, str) and len(help_text) > 0
+        assert isinstance(help_text, str)
+        if field_key in fields_without_help_text:
+            assert help_text == ''
+        else:
+            assert len(help_text) > 0
 
 
 def test_builtin_field_settings_form_initial_defaults(event):
@@ -140,7 +156,7 @@ def test_builtin_field_settings_view_get_and_post(organizer_client, event):
 
 
 def test_builtin_field_settings_reset_to_default(organizer_client, event):
-    """Verify Reset to default restores defaults for the active language while preserving other languages."""
+    """Verify Reset to default removes custom labels and help text so all locales fall back to dynamic translations."""
     event.locale_array = 'en,de'
     event.save()
     event.__dict__.pop('locales', None)
@@ -162,23 +178,19 @@ def test_builtin_field_settings_reset_to_default(organizer_client, event):
     save_response = organizer_client.post(url, post_data)
     assert save_response.status_code == 302
 
-    # Now post reset for English only
-    reset_response = organizer_client.post(url, {'action': 'reset', 'active_lang': 'en'})
+    # Now post reset
+    reset_response = organizer_client.post(url, {'action': 'reset'})
     assert reset_response.status_code == 302
 
-    # Verify English was reset to platform default, but German was kept custom
+    # Verify custom keys are popped so all locales cleanly fall back to defaults
     event.cfp.refresh_from_db()
     flow_config = event.cfp.settings.get('flow', {})
     fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
     title_field = next((f for f in fields if f.get('key') == 'title'), None)
     assert title_field is not None
+    assert 'label' not in title_field
+    assert 'help_text' not in title_field
 
-    default_en_label = get_field_default('title', 'label', 'en')
-    default_en_help = get_field_default('title', 'help_text', 'en')
-    assert title_field['label']['en'] == default_en_label
-    assert title_field['help_text']['en'] == default_en_help
-    assert title_field['label']['de'] == 'Custom Title DE'
-    assert title_field['help_text']['de'] == 'Custom Help DE'
 
 
 def test_forms_overview_renders_settings_links_and_custom_labels(organizer_client, event):
@@ -222,7 +234,8 @@ def test_cfp_settings_form_does_not_clear_gravatar_when_saved(event):
             post_data[f'settings-{name}'] = event.locales
         elif hasattr(field, 'choices'):
             valid_choices = [c[0] for c in field.choices if c[0]]
-            post_data[f'settings-{name}'] = field.initial if field.initial in valid_choices else (valid_choices[0] if valid_choices else '')
+            fallback_val = valid_choices[0] if valid_choices else ''
+            post_data[f'settings-{name}'] = field.initial if field.initial in valid_choices else fallback_val
         elif field.initial is not None:
             post_data[f'settings-{name}'] = field.initial
     sform = CfPSettingsForm(
@@ -471,7 +484,7 @@ def test_builtin_field_settings_avatar_gravatar_atomic_save(event, monkeypatch):
 
 
 def test_builtin_field_settings_reset_to_default_without_active_lang(organizer_client, event):
-    """Verify reset without active_lang resets only the active language and does not wipe other locales."""
+    """Verify reset clears custom label and help_text from flow config and falls back to dynamic defaults."""
     event.locale_array = 'en,de'
     event.save()
     event.__dict__.pop('locales', None)
@@ -499,10 +512,15 @@ def test_builtin_field_settings_reset_to_default_without_active_lang(organizer_c
     fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
     title_field = next((f for f in fields if f.get('key') == 'title'), None)
     assert title_field is not None
+    assert 'label' not in title_field
+    assert 'help_text' not in title_field
 
-    default_en_label = get_field_default('title', 'label', 'en')
-    assert title_field['label']['en'] == default_en_label
-    assert title_field['label']['de'] == 'Custom Title DE'
+    # Verify form reopens with platform defaults for all locales
+    get_response = organizer_client.get(url)
+    assert get_response.status_code == 200
+    form = get_response.context['form']
+    assert form.initial['label'].data['en'] == get_field_default('title', 'label', 'en')
+    assert form.initial['label'].data['de'] == get_field_default('title', 'label', 'de')
 
 
 def test_builtin_field_settings_template_stacked_locales_and_active_lang(organizer_client, event):
@@ -526,7 +544,7 @@ def test_builtin_field_settings_template_stacked_locales_and_active_lang(organiz
 
 
 def test_builtin_field_settings_non_english_fallback_locale(organizer_client, event):
-    """Verify event configured only in German derives fallback locale as 'de'."""
+    """Verify event configured only in German clears custom keys on reset and defaults cleanly."""
     event.locale_array = 'de'
     event.save()
     event.__dict__.pop('locales', None)
@@ -534,6 +552,9 @@ def test_builtin_field_settings_non_english_fallback_locale(organizer_client, ev
         'orga:cfp.field.settings',
         kwargs={'organizer': event.organizer.slug, 'event': event.slug, 'field': 'title'},
     )
+    de_idx = [l[0] for l in settings.LANGUAGES].index('de')
+    organizer_client.post(url, {f'label_{de_idx}': 'Eigener Titel DE', f'help_text_{de_idx}': ''})
+
     response = organizer_client.post(url, {'action': 'reset'})
     assert response.status_code == 302
 
@@ -542,5 +563,49 @@ def test_builtin_field_settings_non_english_fallback_locale(organizer_client, ev
     fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
     title_field = next((f for f in fields if f.get('key') == 'title'), None)
     assert title_field is not None
-    assert 'de' in title_field['label']
+    assert 'label' not in title_field
+    assert 'help_text' not in title_field
+
+
+def test_builtin_field_settings_audit_logging_on_save_and_reset(organizer_client, event):
+    """Verify saving or resetting field settings logs eventyay.cfp.update action."""
+    url = reverse(
+        'orga:cfp.field.settings',
+        kwargs={'organizer': event.organizer.slug, 'event': event.slug, 'field': 'notes'},
+    )
+    initial_log_count = event.cfp.logged_actions().filter(action_type='eventyay.cfp.update').count()
+
+    # Save
+    save_response = organizer_client.post(url, {'label_0': 'New Notes', 'help_text_0': 'New Notes Help'})
+    assert save_response.status_code == 302
+    assert event.cfp.logged_actions().filter(action_type='eventyay.cfp.update').count() == initial_log_count + 1
+    last_log = event.cfp.logged_actions().filter(action_type='eventyay.cfp.update').order_by('-id').first()
+    assert last_log.parsed_data.get('field') == 'notes'
+
+    # Reset
+    reset_response = organizer_client.post(url, {'action': 'reset'})
+    assert reset_response.status_code == 302
+    assert event.cfp.logged_actions().filter(action_type='eventyay.cfp.update').count() == initial_log_count + 2
+    last_log = event.cfp.logged_actions().filter(action_type='eventyay.cfp.update').order_by('-id').first()
+    assert last_log.parsed_data.get('field') == 'notes'
+    assert last_log.parsed_data.get('action') == 'reset'
+
+
+def test_speaker_social_links_template_renders_html_unescaped(rf, event):
+    """Verify speaker_social_links_formset.html renders sanitized HTML in social_links_help_text unescaped."""
+    from eventyay.person.forms import build_speaker_social_links_formset
+
+    formset = build_speaker_social_links_formset()
+    html = render_to_string(
+        'common/speaker_social_links_formset.html',
+        {
+            'social_media_formset': formset,
+            'social_links_label': 'Socials',
+            'social_links_help_text': '<a href="https://example.com">Visit our site</a>',
+            'request': rf.get('/'),
+        },
+    )
+    assert '<a href="https://example.com">Visit our site</a>' in html
+    assert '&lt;a href=' not in html
+
 
