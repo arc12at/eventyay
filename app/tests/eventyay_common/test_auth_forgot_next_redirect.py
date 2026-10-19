@@ -21,7 +21,7 @@ def test_authenticated_external_next_goes_to_interstitial(authenticated_client, 
 
 @pytest.mark.django_db
 @pytest.mark.parametrize('url_name', URL_NAMES)
-@pytest.mark.parametrize('next_url', ['//example.org/x', 'javascript:alert(1)'])
+@pytest.mark.parametrize('next_url', ['//example.org/x', 'javascript:alert(1)', 'http://[bad'])
 def test_authenticated_unsafe_next_falls_back_to_dashboard(authenticated_client, url_name, next_url):
     """A logged-in user with a protocol-relative or non-http `next` is sent to the dashboard."""
     response = authenticated_client.get(reverse(url_name), {'next': next_url})

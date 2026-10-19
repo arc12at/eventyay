@@ -33,7 +33,7 @@ class TestCommonPages:
         assert response.status_code == 200
         assert '<b>x' not in response.content.decode()
 
-    @pytest.mark.parametrize('url', ['javascript:alert(1)', 'data:text/html,x', 'ftp://example.org'])
+    @pytest.mark.parametrize('url', ['javascript:alert(1)', 'data:text/html,x', 'ftp://example.org', 'http://[bad'])
     def test_redirect_rejects_bad_scheme(self, client, url):
         """Non-http(s) targets are rejected, so they never become a clickable link."""
         assert client.get(safelink(url)).status_code == 400
@@ -46,7 +46,7 @@ class TestCommonPages:
         """Local URLs are not wrapped."""
         assert safelink('/common/') == '/common/'
 
-    @pytest.mark.parametrize('url', [None, '', '//example.org/x', 'javascript:alert(1)'])
+    @pytest.mark.parametrize('url', [None, '', '//example.org/x', 'javascript:alert(1)', 'http://[bad'])
     def test_safe_next_rejects_unsafe(self, url):
         """Unsafe redirect targets fall back to the caller's default."""
         assert safe_next(url) is None

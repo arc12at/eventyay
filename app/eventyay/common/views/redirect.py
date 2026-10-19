@@ -14,9 +14,9 @@ def redirect_view(request: HttpRequest) -> HttpResponse:
     """Show the 'leaving Eventyay' interstitial; never redirect off-site without a click."""
     try:
         url = SIGNER.unsign(request.GET.get('url', ''))
-    except signing.BadSignature:
+        parsed = urllib.parse.urlparse(url)
+    except (signing.BadSignature, ValueError):
         return HttpResponseBadRequest('Invalid parameter')
-    parsed = urllib.parse.urlparse(url)
     if parsed.scheme not in ('http', 'https') or not parsed.hostname:
         return HttpResponseBadRequest('Invalid parameter')
     response = render(request, 'common/redirect.html', {'hostname': parsed.hostname, 'url': url})
@@ -37,9 +37,10 @@ def safe_next(url: str | None) -> str | None:
     Local URLs are returned as-is, off-site http(s) URLs are routed through the interstitial,
     anything else (``//host``, ``javascript:``, empty) returns ``None`` so callers use their default.
     """
-    if url and (
-        url_has_allowed_host_and_scheme(url, allowed_hosts=None)
-        or urllib.parse.urlparse(url).scheme in ('http', 'https')
-    ):
+    try:
+        offsite = bool(url) and urllib.parse.urlparse(url).scheme in ('http', 'https')
+    except ValueError:
+        return None
+    if url and (url_has_allowed_host_and_scheme(url, allowed_hosts=None) or offsite):
         return safelink(url)
     return None
