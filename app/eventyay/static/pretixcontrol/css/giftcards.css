@@ -3,7 +3,7 @@
 .gc-container {
   max-width: 100%;
   margin: 0 auto;
-  padding: 20px 0;
+  padding: 20px 15px;
   color: var(--color-text);
 }
 
