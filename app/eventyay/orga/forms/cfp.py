@@ -1074,7 +1074,11 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
         for loc in self.event.locales:
             if loc in submitted_label:
                 existing_label[loc] = submitted_label[loc]
-        field_entry['label'] = existing_label
+        # An unchanged label is not stored, so the form keeps its own label and translations.
+        if existing_label == {loc: get_field_default(self.field_key, 'label', loc) for loc in self.event.locales}:
+            field_entry.pop('label', None)
+        else:
+            field_entry['label'] = existing_label
 
         existing_help_text = field_entry.get('help_text') or {}
         if isinstance(existing_help_text, LazyI18nString):
@@ -1095,7 +1099,15 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
             if loc in submitted_help_text:
                 val = submitted_help_text[loc]
                 existing_help_text[loc] = sanitize_rich_text(val) if val else val
-        field_entry['help_text'] = existing_help_text
+        # An unchanged help text is not stored, so the form keeps its own help text and translations.
+        default_help_text = {}
+        for loc in self.event.locales:
+            default = get_field_default(self.field_key, 'help_text', loc)
+            default_help_text[loc] = sanitize_rich_text(default) if default else default
+        if existing_help_text == default_help_text:
+            field_entry.pop('help_text', None)
+        else:
+            field_entry['help_text'] = existing_help_text
 
         with transaction.atomic():
             if self.field_key == 'avatar' and 'enable_gravatar' in self.cleaned_data:

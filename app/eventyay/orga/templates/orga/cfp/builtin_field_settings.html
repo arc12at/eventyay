@@ -35,7 +35,7 @@
         </a>
       </span>
       <div class="cfp-field-settings-actions">
-        <button type="submit" name="action" value="reset" class="btn btn-outline-info">
+        <button type="submit" name="action" value="reset" form="cfp-field-reset-form" class="btn btn-outline-info">
           <i class="fa fa-undo"></i> {% translate 'Reset to default' %}
         </button>
         <button type="submit" class="btn btn-primary">
@@ -44,4 +44,5 @@
       </div>
     </div>
   </form>
+  <form method="post" id="cfp-field-reset-form">{% csrf_token %}</form>
 {% endblock content %}

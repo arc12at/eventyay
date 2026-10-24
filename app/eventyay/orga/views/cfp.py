@@ -42,6 +42,7 @@ from eventyay.base.models import (
 from eventyay.cfp.flow import FIELD_STEP_MAP, CfPFlow, get_field_default
 from eventyay.common.forms import I18nFormSet
 from eventyay.common.language import get_language_choices_native_with_ui_name
+from eventyay.common.sanitizers import sanitize_rich_text
 from eventyay.common.session_video import exclude_session_video_from_cfp_questions
 from eventyay.common.text.phrases import phrases
 from eventyay.common.text.serialize import I18nStrJSONEncoder
@@ -305,7 +306,7 @@ class CfPForms(EventPermissionRequired, TemplateView):
                                         else:
                                             val = str(ht)
                                         if val is not None:
-                                            field_help_texts[f_key] = val
+                                            field_help_texts[f_key] = sanitize_rich_text(str(val))
         except (KeyError, AttributeError, TypeError, ValueError, json.JSONDecodeError) as e:
             logger.warning('Failed to parse cfp_flow config for event %s: %s', event.id, e)
 

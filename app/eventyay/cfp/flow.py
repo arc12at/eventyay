@@ -81,7 +81,7 @@ FIELD_STEP_MAP = {
 
 FIELD_DEFAULTS = {
     'title': {
-        'label': _('Title'),
+        'label': _('Proposal title'),
         'help_text': '',
     },
     'submission_type': {
@@ -125,11 +125,11 @@ FIELD_DEFAULTS = {
         'help_text': '',
     },
     'do_not_record': {
-        'label': _('Recording opt-out'),
-        'help_text': _('Don’t record this session.'),
+        'label': _('Don’t record this session.'),
+        'help_text': '',
     },
     'fullname': {
-        'label': _('Full Name'),
+        'label': _('Full name'),
         'help_text': '',
     },
     'biography': {
@@ -145,15 +145,15 @@ FIELD_DEFAULTS = {
         'help_text': _('What organization or company do you represent?'),
     },
     'avatar': {
-        'label': _('Profile picture'),
+        'label': _('Speaker photo'),
         'help_text': '',
     },
     'avatar_source': {
-        'label': _('Profile picture source'),
+        'label': _('Speaker photo source'),
         'help_text': _('Please enter the name of the author or source of image and a link if applicable.'),
     },
     'avatar_license': {
-        'label': _('Profile picture license'),
+        'label': _('Speaker photo license'),
         'help_text': _('Please enter the name of the license of the photo and link to it if applicable.'),
     },
     'availabilities': {
@@ -185,7 +185,7 @@ def get_field_default(field_key: str, attr: str, locale: str) -> str:
 
 
 
-def i18n_string(data, locales, preserve_identical=False):
+def i18n_string(data, locales):
     if isinstance(data, LazyI18nString):
         return data
     data = copy.deepcopy(data)
@@ -200,16 +200,12 @@ def i18n_string(data, locales, preserve_identical=False):
 
     for locale in locales:
         if locale != 'en':
-            if preserve_identical and locale in data and data[locale] is not None:
-                continue
             stored = data.get(locale, '')
             # Re-evaluate if missing OR if the stored value is identical to English,
             # which indicates a failed gettext lookup that was cached as a fallback.
-            if not stored or (not preserve_identical and stored == english):
+            if not stored or stored == english:
                 with language(locale):
-                    translation = gettext(english)
-                    if translation != english:
-                        data[locale] = translation
+                    data[locale] = gettext(english)
     return LazyI18nString(data)
 
 
@@ -1149,11 +1145,10 @@ class CfPFlow:
                         {
                             'widget': field.widget.__class__.__name__,
                             'key': key,
-                            'label': i18n_string(field.label, locales, preserve_identical=True),
+                            'label': i18n_string(field.label, locales),
                             'help_text': i18n_string(
                                 getattr(field, 'original_help_text', field.help_text),
                                 locales,
-                                preserve_identical=True,
                             ),
                             'added_help_text': i18n_string(
                                 getattr(field, 'added_help_text', ''),
@@ -1203,7 +1198,7 @@ class CfPFlow:
             for key in ('help_text', 'request', 'required', 'key', 'label'):
                 if key in config_field:
                     field[key] = (
-                        i18n_string(config_field[key], locales, preserve_identical=True)
+                        i18n_string(config_field[key], locales)
                         if key in ('help_text', 'label')
                         else config_field[key]
                     )

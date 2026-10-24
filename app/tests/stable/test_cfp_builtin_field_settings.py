@@ -24,6 +24,7 @@ def test_field_step_map_and_defaults_coverage():
         'track',
         'content_locale',
         'slides',
+        'do_not_record',
         'fullname',
         'avatar',
         'availabilities',
@@ -439,8 +440,8 @@ def test_builtin_field_settings_identical_translations_preserved(event):
     de_idx = lang_codes.index('de')
 
     post_data = {
-        f'label_{en_idx}': 'Track',
-        f'label_{de_idx}': 'Track',
+        f'label_{en_idx}': 'Topic area',
+        f'label_{de_idx}': 'Topic area',
         f'help_text_{en_idx}': 'Choose your track',
         f'help_text_{de_idx}': 'Choose your track',
     }
@@ -453,8 +454,8 @@ def test_builtin_field_settings_identical_translations_preserved(event):
     fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
     track_field = next((f for f in fields if f.get('key') == 'track'), None)
     assert track_field is not None
-    assert track_field['label']['en'] == 'Track'
-    assert track_field['label']['de'] == 'Track'
+    assert track_field['label']['en'] == 'Topic area'
+    assert track_field['label']['de'] == 'Topic area'
     assert track_field['help_text']['en'] == 'Choose your track'
     assert track_field['help_text']['de'] == 'Choose your track'
 
@@ -607,5 +608,32 @@ def test_speaker_social_links_template_renders_html_unescaped(rf, event):
     )
     assert '<a href="https://example.com">Visit our site</a>' in html
     assert '&lt;a href=' not in html
+
+
+def test_builtin_field_settings_unchanged_defaults_not_stored(event):
+    """Verify saving field settings with unchanged default label and help text does not store them in flow config."""
+    event.locale_array = 'en'
+    event.save()
+    event.__dict__.pop('locales', None)
+
+    default_label = get_field_default('title', 'label', 'en')
+    default_help = get_field_default('title', 'help_text', 'en')
+
+    form = CfPBuiltinFieldSettingsForm(
+        event=event,
+        field_key='title',
+        data={'label_0': default_label, 'help_text_0': default_help},
+    )
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.cfp.refresh_from_db()
+    flow_config = event.cfp.settings.get('flow', {})
+    fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
+    title_field = next((f for f in fields if f.get('key') == 'title'), None)
+    if title_field:
+        assert 'label' not in title_field
+        assert 'help_text' not in title_field
+
 
 
