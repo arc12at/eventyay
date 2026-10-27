@@ -633,11 +633,25 @@ def test_builtin_field_settings_unchanged_defaults_not_stored(event):
         assert 'help_text' not in title_field
 
 
-def test_builtin_field_settings_catalog_string_identical_translations_preserved(event):
+def test_builtin_field_settings_catalog_string_identical_translations_preserved(event, monkeypatch):
     """Verify a known catalog msgid (e.g. Notes) with identical en and de values is not overwritten with gettext."""
     event.locale_array = 'en,de'
     event.save()
     event.__dict__.pop('locales', None)
+
+    # In environments where .mo files are not compiled (such as CI),
+    # ensure gettext translates 'Notes' to 'Notiz' in German so that
+    # get_field_default returns different translations and we can verify
+    # that intentional same-as-English translations are not replaced by gettext.
+    import django.utils.translation
+    real_gettext = django.utils.translation.gettext
+
+    def mock_gettext(message):
+        if message == 'Notes' and django.utils.translation.get_language() == 'de':
+            return 'Notiz'
+        return real_gettext(message)
+
+    monkeypatch.setattr('django.utils.translation.gettext', mock_gettext)
 
     lang_codes = [l[0] for l in settings.LANGUAGES]
     en_idx = lang_codes.index('en')
