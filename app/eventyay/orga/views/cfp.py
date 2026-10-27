@@ -1,12 +1,9 @@
-import copy
 import http
 import json
 import logging
 from collections import defaultdict
-from urllib.parse import urlencode
 
 from csp.decorators import csp_update
-from django.conf import settings
 from django.contrib import messages
 from django.db import models, transaction
 from django.db.models import Count, Q
@@ -39,7 +36,7 @@ from eventyay.base.models import (
     Track,
     normalize_field_order,
 )
-from eventyay.cfp.flow import FIELD_STEP_MAP, CfPFlow, get_field_default
+from eventyay.cfp.flow import FIELD_STEP_MAP, CfPFlow, get_field_default, get_flow_field_entry
 from eventyay.common.forms import I18nFormSet
 from eventyay.common.language import get_language_choices_native_with_ui_name
 from eventyay.common.sanitizers import sanitize_rich_text
@@ -1047,19 +1044,10 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
         context = super().get_context_data(**kwargs)
         field_key = self.kwargs['field']
         event = self.request.event
-        active_lang = self.request.GET.get('lang') or self.request.LANGUAGE_CODE
-        if not event.locales or active_lang not in event.locales:
-            active_lang = event.locales[0] if event.locales else 'en'
-
-        default_label = get_field_default(field_key, 'label', active_lang)
+        default_label = get_field_default(field_key, 'label', self.request.LANGUAGE_CODE)
         context['field_key'] = field_key
         context['field_label'] = default_label or field_key.replace('_', ' ').capitalize()
         context['page_title'] = _('Field settings: {field}').format(field=context['field_label'])
-        context['active_lang'] = active_lang
-        context['locales'] = [
-            (loc, dict(settings.LANGUAGES).get(loc, loc))
-            for loc in (event.locales or ['en'])
-        ]
         context['back_url'] = reverse(
             'orga:cfp.questions.view',
             kwargs={'organizer': event.organizer.slug, 'event': event.slug},
@@ -1073,36 +1061,19 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
 
     def reset_to_default(self, request):
         field_key = self.kwargs['field']
-        step_id = FIELD_STEP_MAP[field_key]
         event = request.event
-        flow = CfPFlow(event)
 
-        config = copy.deepcopy(event.cfp.settings.get('flow') or {})
-        if isinstance(config, str):
-            config = json.loads(config)
-        if not isinstance(config, dict):
-            config = {}
-        steps = config.setdefault('steps', {})
-        step_data = steps.setdefault(step_id, {})
-        fields_list = step_data.setdefault('fields', [])
-        if isinstance(fields_list, dict):
-            converted = []
-            for k, val in fields_list.items():
-                if isinstance(val, dict):
-                    entry = copy.deepcopy(val)
-                    entry.setdefault('key', k)
-                    converted.append(entry)
-                else:
-                    converted.append({'key': k})
-            fields_list = converted
-            step_data['fields'] = fields_list
-
-        field_entry = next((f for f in fields_list if isinstance(f, dict) and f.get('key') == field_key), None)
+        config, field_entry = get_flow_field_entry(event, field_key, create=False)
         if field_entry:
             field_entry.pop('label', None)
             field_entry.pop('help_text', None)
 
-        flow.save_config(config)
+        with transaction.atomic():
+            if field_key == 'avatar':
+                event.cfp.settings['cfp_enable_gravatar'] = True
+            event.cfp.settings['flow'] = config
+            event.cfp.save(update_fields=['settings'])
+            event.__dict__.pop('cfp_flow', None)
 
         self.request.event.cfp.log_action(
             'eventyay.cfp.update',
@@ -1123,14 +1094,5 @@ class CfPBuiltinFieldSettings(EventPermissionRequired, FormView):
             data={'field': self.kwargs['field']},
         )
         messages.success(self.request, phrases.base.saved)
-        event = self.request.event
-        active_lang = (
-            self.request.POST.get('active_lang')
-            or self.request.GET.get('lang')
-            or self.request.LANGUAGE_CODE
-        )
-        if not event.locales or active_lang not in event.locales:
-            active_lang = event.locales[0] if event.locales else 'en'
-        query_string = urlencode({'lang': active_lang})
-        return redirect(f'{self.request.path}?{query_string}')
+        return redirect(self.request.path)
 

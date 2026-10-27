@@ -10,7 +10,7 @@ from django.utils.translation import override
 from django_scopes.forms import SafeModelChoiceField, SafeModelMultipleChoiceField
 from i18nfield.forms import I18nFormField, I18nFormMixin, I18nModelForm, I18nTextInput, I18nTextarea
 from i18nfield.strings import LazyI18nString
-from eventyay.cfp.flow import CfPFlow, FIELD_STEP_MAP, get_field_default
+from eventyay.cfp.flow import get_field_default, get_flow_field_entry
 from eventyay.common.forms.fields import I18nRichTextFormField
 from eventyay.common.sanitizers import sanitize_rich_text
 from eventyay.base.models import (
@@ -980,13 +980,8 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
             self.initial['enable_gravatar'] = event.cfp.enable_gravatar
             self.fields['enable_gravatar'].initial = event.cfp.enable_gravatar
 
-        step_id = FIELD_STEP_MAP.get(field_key, 'info')
-        step_config = event.cfp_flow.config.get('steps', {}).get(step_id, {})
-        fields_config = step_config.get('fields', [])
-        if isinstance(fields_config, dict):
-            field_data = fields_config.get(field_key, {})
-        else:
-            field_data = next((f for f in fields_config if isinstance(f, dict) and f.get('key') == field_key), {})
+        _, field_data = get_flow_field_entry(event, field_key, create=False)
+        field_data = field_data or {}
 
         stored_label = field_data.get('label')
         stored_help_text = field_data.get('help_text')
@@ -1029,32 +1024,7 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
         self.initial['help_text'] = LazyI18nString(help_text_data)
 
     def save(self):
-        step_id = FIELD_STEP_MAP.get(self.field_key, 'info')
-        flow = CfPFlow(self.event)
-        config = copy.deepcopy(self.event.cfp.settings.get('flow') or {})
-        if isinstance(config, str):
-            config = json.loads(config)
-        if not isinstance(config, dict):
-            config = {}
-        steps = config.setdefault('steps', {})
-        step_data = steps.setdefault(step_id, {})
-        fields_list = step_data.setdefault('fields', [])
-        if isinstance(fields_list, dict):
-            converted = []
-            for k, v in fields_list.items():
-                if isinstance(v, dict):
-                    v = copy.deepcopy(v)
-                    v.setdefault('key', k)
-                    converted.append(v)
-                else:
-                    converted.append({'key': k})
-            fields_list = converted
-            step_data['fields'] = fields_list
-
-        field_entry = next((f for f in fields_list if isinstance(f, dict) and f.get('key') == self.field_key), None)
-        if not field_entry:
-            field_entry = {'key': self.field_key}
-            fields_list.append(field_entry)
+        config, field_entry = get_flow_field_entry(self.event, self.field_key, create=True)
 
         existing_label = field_entry.get('label') or {}
         if isinstance(existing_label, LazyI18nString):
@@ -1112,5 +1082,7 @@ class CfPBuiltinFieldSettingsForm(I18nFormMixin, forms.Form):
         with transaction.atomic():
             if self.field_key == 'avatar' and 'enable_gravatar' in self.cleaned_data:
                 self.event.cfp.settings['cfp_enable_gravatar'] = self.cleaned_data['enable_gravatar']
-            flow.save_config(config)
+            self.event.cfp.settings['flow'] = config
+            self.event.cfp.save(update_fields=['settings'])
+            self.event.__dict__.pop('cfp_flow', None)
 

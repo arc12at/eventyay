@@ -17,8 +17,6 @@
     {% csrf_token %}
     {% bootstrap_form_errors form %}
 
-    <input type="hidden" name="active_lang" id="active_lang" value="{{ active_lang }}">
-
     <fieldset>
       <legend>{% translate 'Settings' %}</legend>
       {% bootstrap_field form.label layout='control' %}

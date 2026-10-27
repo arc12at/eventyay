@@ -148,7 +148,7 @@ def test_builtin_field_settings_view_get_and_post(organizer_client, event):
     }
     post_response = organizer_client.post(url, post_data)
     assert post_response.status_code == 302
-    assert post_response.url.endswith(url + '?lang=en')
+    assert post_response.url == url
 
     # Check updated form initial
     get_response = organizer_client.get(url)
@@ -325,8 +325,8 @@ def test_builtin_field_settings_explicitly_empty_help_text_and_disabled_locales(
     assert job_field['help_text']['en'] == ''
 
 
-def test_builtin_field_settings_invalid_active_lang_fallback(organizer_client, event):
-    """Verify form_valid falls back to the first available event locale when active_lang is invalid."""
+def test_builtin_field_settings_form_valid_redirect(organizer_client, event):
+    """Verify form_valid redirects back to the field settings page."""
     url = reverse(
         'orga:cfp.field.settings',
         kwargs={'organizer': event.organizer.slug, 'event': event.slug, 'field': 'title'},
@@ -334,11 +334,10 @@ def test_builtin_field_settings_invalid_active_lang_fallback(organizer_client, e
     post_data = {
         'label_0': 'My Proposal Title',
         'help_text_0': 'My Help Text',
-        'active_lang': 'invalid_locale_xyz',
     }
     response = organizer_client.post(url, post_data)
     assert response.status_code == 302
-    assert response.url.endswith(url + f'?lang={event.locales[0]}')
+    assert response.url == url
 
 
 def test_builtin_field_settings_help_text_sanitized(event):
@@ -473,10 +472,10 @@ def test_builtin_field_settings_avatar_gravatar_atomic_save(event, monkeypatch):
     form = CfPBuiltinFieldSettingsForm(event=event, field_key='avatar', data=post_data)
     assert form.is_valid()
 
-    def failing_save_config(*args, **kwargs):
+    def failing_save(*args, **kwargs):
         raise RuntimeError('Simulated database write failure')
 
-    monkeypatch.setattr(CfPFlow, 'save_config', failing_save_config)
+    monkeypatch.setattr(event.cfp, 'save', failing_save)
     with pytest.raises(RuntimeError):
         form.save()
 
@@ -524,7 +523,7 @@ def test_builtin_field_settings_reset_to_default_without_active_lang(organizer_c
     assert form.initial['label'].data['de'] == get_field_default('title', 'label', 'de')
 
 
-def test_builtin_field_settings_template_stacked_locales_and_active_lang(organizer_client, event):
+def test_builtin_field_settings_template_stacked_locales(organizer_client, event):
     """Verify multilingual event renders all language inputs stacked simultaneously."""
     event.locale_array = 'en,de'
     event.save()
@@ -540,8 +539,6 @@ def test_builtin_field_settings_template_stacked_locales_and_active_lang(organiz
     # Form renders both locale inputs simultaneously
     assert 'lang="en"' in content
     assert 'lang="de"' in content
-    assert 'name="active_lang"' in content
-    assert 'id="active_lang"' in content
 
 
 def test_builtin_field_settings_non_english_fallback_locale(organizer_client, event):
@@ -634,6 +631,99 @@ def test_builtin_field_settings_unchanged_defaults_not_stored(event):
     if title_field:
         assert 'label' not in title_field
         assert 'help_text' not in title_field
+
+
+def test_builtin_field_settings_catalog_string_identical_translations_preserved(event):
+    """Verify a known catalog msgid (e.g. Notes) with identical en and de values is not overwritten with gettext."""
+    event.locale_array = 'en,de'
+    event.save()
+    event.__dict__.pop('locales', None)
+
+    lang_codes = [l[0] for l in settings.LANGUAGES]
+    en_idx = lang_codes.index('en')
+    de_idx = lang_codes.index('de')
+
+    post_data = {
+        f'label_{en_idx}': 'Notes',
+        f'label_{de_idx}': 'Notes',
+        f'help_text_{en_idx}': 'Private committee notes',
+        f'help_text_{de_idx}': 'Private committee notes',
+    }
+    form = CfPBuiltinFieldSettingsForm(event=event, field_key='notes', data=post_data)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.cfp.refresh_from_db()
+    flow_config = event.cfp.settings.get('flow', {})
+    fields = flow_config.get('steps', {}).get('info', {}).get('fields', [])
+    notes_field = next((f for f in fields if f.get('key') == 'notes'), None)
+    assert notes_field is not None
+    assert notes_field['label']['en'] == 'Notes'
+    assert notes_field['label']['de'] == 'Notes'
+    assert notes_field['help_text']['en'] == 'Private committee notes'
+    assert notes_field['help_text']['de'] == 'Private committee notes'
+
+    # Reopening form keeps both as submitted rather than replacing German with PO translation
+    reopened_form = CfPBuiltinFieldSettingsForm(event=event, field_key='notes')
+    assert reopened_form.initial['label'].data['en'] == 'Notes'
+    assert reopened_form.initial['label'].data['de'] == 'Notes'
+
+
+def test_builtin_field_settings_reset_avatar_restores_gravatar(organizer_client, event):
+    """Verify resetting avatar settings restores cfp_enable_gravatar to True."""
+    event.cfp.settings['cfp_enable_gravatar'] = False
+    event.cfp.save(update_fields=['settings'])
+    assert event.cfp.enable_gravatar is False
+
+    url = reverse(
+        'orga:cfp.field.settings',
+        kwargs={'organizer': event.organizer.slug, 'event': event.slug, 'field': 'avatar'},
+    )
+    # Save a custom label first
+    organizer_client.post(url, {'label_0': 'Custom Photo', 'help_text_0': ''})
+    event.cfp.refresh_from_db()
+    assert event.cfp.enable_gravatar is False
+
+    # Now reset
+    response = organizer_client.post(url, {'action': 'reset'})
+    assert response.status_code == 302
+
+    event.cfp.refresh_from_db()
+    assert event.cfp.enable_gravatar is True
+    assert event.cfp.settings.get('cfp_enable_gravatar') is True
+
+
+def test_builtin_field_settings_unrelated_steps_not_rewritten(event):
+    """Verify saving a field in info step does not rewrite or convert dict fields in profile step."""
+    event.cfp.settings['flow'] = {
+        'steps': {
+            'info': {
+                'fields': [{'key': 'title', 'label': {'en': 'Existing Title'}}]
+            },
+            'profile': {
+                'fields': {
+                    'biography': {'label': {'en': 'Notes', 'de': 'Notes'}},
+                }
+            }
+        }
+    }
+    event.cfp.save(update_fields=['settings'])
+
+    post_data = {
+        'label_0': 'Brand New Title',
+        'help_text_0': '',
+    }
+    form = CfPBuiltinFieldSettingsForm(event=event, field_key='title', data=post_data)
+    assert form.is_valid(), form.errors
+    form.save()
+
+    event.cfp.refresh_from_db()
+    flow_config = event.cfp.settings.get('flow', {})
+    profile_fields = flow_config.get('steps', {}).get('profile', {}).get('fields')
+    assert isinstance(profile_fields, dict)
+    assert profile_fields['biography']['label']['en'] == 'Notes'
+    assert profile_fields['biography']['label']['de'] == 'Notes'
+
 
 
 

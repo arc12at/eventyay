@@ -184,6 +184,46 @@ def get_field_default(field_key: str, attr: str, locale: str) -> str:
         return str(val)
 
 
+def get_flow_field_entry(event, field_key: str, create: bool = False):
+    """Retrieve the flow config and the field entry for field_key.
+
+    Converts dict-style field configurations to a list within the target step.
+    If create is True and the field entry is not present, appends a new entry.
+    Returns (config, field_entry).
+    """
+    step_id = FIELD_STEP_MAP.get(field_key, 'info')
+    config = copy.deepcopy(event.cfp.settings.get('flow') or {})
+    if isinstance(config, str):
+        try:
+            config = json.loads(config)
+        except (ValueError, TypeError):
+            config = {}
+    if not isinstance(config, dict):
+        config = {}
+
+    steps = config.setdefault('steps', {})
+    step_data = steps.setdefault(step_id, {})
+    fields_list = step_data.setdefault('fields', [])
+    if isinstance(fields_list, dict):
+        converted = []
+        for k, v in fields_list.items():
+            if isinstance(v, dict):
+                entry = copy.deepcopy(v)
+                entry.setdefault('key', k)
+                converted.append(entry)
+            else:
+                converted.append({'key': k})
+        fields_list = converted
+        step_data['fields'] = fields_list
+
+    field_entry = next((f for f in fields_list if isinstance(f, dict) and f.get('key') == field_key), None)
+    if not field_entry and create:
+        field_entry = {'key': field_key}
+        fields_list.append(field_entry)
+
+    return config, field_entry
+
+
 
 def i18n_string(data, locales):
     if isinstance(data, LazyI18nString):
