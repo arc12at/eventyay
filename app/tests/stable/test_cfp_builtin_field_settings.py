@@ -195,7 +195,7 @@ def test_builtin_field_settings_reset_to_default(organizer_client, event):
 
 
 def test_forms_overview_renders_settings_links_and_custom_labels(organizer_client, event):
-    """Verify Forms overview page renders settings buttons and normal font weight for help text."""
+    """Verify Forms overview page renders settings buttons and custom field label under field name."""
     # Customize a field first
     url = reverse(
         'orga:cfp.field.settings',
@@ -217,11 +217,16 @@ def test_forms_overview_renders_settings_links_and_custom_labels(organizer_clien
 
     # Verify settings link for notes is rendered
     assert url in content
-    # Verify custom label and help text are displayed
+    # Verify standard field name and custom label below it are displayed
+    assert 'Notes' in content
     assert 'Private Notes for Committee' in content
-    assert 'Only organizers will see these notes.' in content
     # Verify floating Gravatar popover is no longer in overview page
     assert 'profile-picture-settings-popover' not in content
+
+    # Verify custom help text is rendered on the settings page
+    settings_response = organizer_client.get(url)
+    assert settings_response.status_code == 200
+    assert 'Only organizers will see these notes.' in settings_response.content.decode()
 
 
 def test_cfp_settings_form_does_not_clear_gravatar_when_saved(event):

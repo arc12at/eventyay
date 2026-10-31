@@ -308,6 +308,7 @@ class CfPForms(EventPermissionRequired, TemplateView):
             logger.warning('Failed to parse cfp_flow config for event %s: %s', event.id, e)
 
         context['field_labels'] = field_labels
+        context['question_texts'] = field_labels
         context['field_help_texts'] = field_help_texts
 
         return context

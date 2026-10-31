@@ -137,10 +137,8 @@
                     <tbody dragsort-url="{% url 'orga:cfp.questions.list' organizer=request.event.organizer.slug event=request.event.slug %}">
                         <tr dragsort-id="title">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.title|default:_("Proposal title") }}</div>
-                                {% if field_help_texts.title %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.title|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Title" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.title|default:_("Proposal title") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch always-on" aria-label="{% translate 'Title is always active' %}">
@@ -179,10 +177,8 @@
                         {# Session Type #}
                         <tr dragsort-id="submission_type">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.submission_type|default:_("Session type") }}</div>
-                                {% if field_help_texts.submission_type %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.submission_type|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Session type" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.submission_type|default:_("Session type") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch always-on" aria-label="{% translate 'Session type is always active' %}">
@@ -222,10 +218,8 @@
                         {% with field=sform.cfp_ask_abstract %}
                         <tr dragsort-id="abstract">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.abstract|default:_("Abstract") }}</div>
-                                {% if field_help_texts.abstract %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.abstract|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Abstract" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.abstract|default:_("Abstract") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -272,10 +266,8 @@
                         {% with field=sform.cfp_ask_description %}
                         <tr dragsort-id="description">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.description|default:_("Description") }}</div>
-                                {% if field_help_texts.description %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.description|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Description" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.description|default:_("Description") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -322,10 +314,8 @@
                         {% with field=sform.cfp_ask_notes %}
                         <tr dragsort-id="notes">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.notes|default:_("Notes") }}</div>
-                                {% if field_help_texts.notes %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.notes|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Notes" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.notes|default:_("Notes") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -366,10 +356,8 @@
                         {% with field=sform.cfp_ask_track %}
                         <tr dragsort-id="track">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.track|default:_("Track") }}</div>
-                                {% if field_help_texts.track %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.track|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Track" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.track|default:_("Track") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -415,10 +403,8 @@
                         {% with field=sform.cfp_ask_duration %}
                         <tr dragsort-id="duration">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.duration|default:_("Duration") }}</div>
-                                {% if field_help_texts.duration %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.duration|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Duration" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.duration|default:_("Duration") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -464,10 +450,8 @@
                         {% with field=sform.cfp_ask_slot_count %}
                         <tr dragsort-id="slot_count">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.slot_count|default:_("Slot Count") }}</div>
-                                {% if field_help_texts.slot_count %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.slot_count|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Slot Count" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.slot_count|default:_("Slot Count") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -510,7 +494,7 @@
                         <tr dragsort-id="content_locale">
                             <th>
                                 <span class="content-locale-label font-weight-bold">
-                                    {{ field_labels.content_locale|default:_("Content Locale") }}
+                                    {% translate "Content Locale" %}
                                     <span class="cfp-inline-help-wrapper">
                                         <button type="button" class="btn btn-link btn-xs p-0 cfp-inline-help-toggle"
                                             aria-label="{% translate 'Information about Content Locale' %}"
@@ -522,9 +506,7 @@
                                         </span>
                                     </span>
                                 </span>
-                                {% if field_help_texts.content_locale %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.content_locale|safe }}</div>
-                                {% endif %}
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.content_locale|default:_("Language") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -576,10 +558,8 @@
                         {% with field=sform.cfp_ask_image %}
                         <tr dragsort-id="image">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.image|default:_("Session image") }}</div>
-                                {% if field_help_texts.image %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.image|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Session image" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.image|default:_("Session image") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -626,10 +606,8 @@
                         {% with field=sform.cfp_ask_slides %}
                         <tr dragsort-id="slides">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.slides|default:_("Slides") }}</div>
-                                {% if field_help_texts.slides %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.slides|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Slides" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.slides|default:_("Slides") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -720,10 +698,8 @@
                         {% with field=sform.cfp_ask_do_not_record %}
                         <tr dragsort-id="do_not_record">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.do_not_record|default:_("Don’t record this session.") }}</div>
-                                {% if field_help_texts.do_not_record %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.do_not_record|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Recording opt-out" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.do_not_record|default:_("Don’t record this session.") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -861,10 +837,8 @@
                         {% with field=sform.cfp_ask_fullname %}
                         <tr dragsort-id="fullname">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.fullname|default:_("Full name") }}</div>
-                                {% if field_help_texts.fullname %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.fullname|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Full Name" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.fullname|default:_("Full name") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch always-on" aria-label="{% translate 'Full name is always active' %}">
@@ -908,10 +882,8 @@
                         {% with field=sform.cfp_ask_biography %}
                         <tr dragsort-id="biography">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.biography|default:_("Biography") }}</div>
-                                {% if field_help_texts.biography %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.biography|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Biography" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.biography|default:_("Biography") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -959,10 +931,8 @@
                         {% with field=sform.cfp_ask_job_title %}
                         <tr dragsort-id="job_title">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.job_title|default:_("Job title/role") }}</div>
-                                {% if field_help_texts.job_title %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.job_title|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Job title/role" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.job_title|default:_("Job title/role") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1009,10 +979,8 @@
                         {% with field=sform.cfp_ask_organization %}
                         <tr dragsort-id="organization">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.organization|default:_("Organization") }}</div>
-                                {% if field_help_texts.organization %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.organization|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Organization" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.organization|default:_("Organization") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1059,10 +1027,8 @@
                         {% with field=sform.cfp_ask_avatar %}
                         <tr dragsort-id="avatar">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.avatar|default:_("Speaker photo") }}</div>
-                                {% if field_help_texts.avatar %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.avatar|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Speaker photo" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.avatar|default:_("Speaker photo") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1110,10 +1076,8 @@
                         {% with field=sform.cfp_ask_avatar_source %}
                         <tr dragsort-id="avatar_source">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.avatar_source|default:_("Speaker photo source") }}</div>
-                                {% if field_help_texts.avatar_source %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.avatar_source|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Speaker photo source" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.avatar_source|default:_("Speaker photo source") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1154,10 +1118,8 @@
                         {% with field=sform.cfp_ask_avatar_license %}
                         <tr dragsort-id="avatar_license">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.avatar_license|default:_("Speaker photo license") }}</div>
-                                {% if field_help_texts.avatar_license %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.avatar_license|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Speaker photo license" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.avatar_license|default:_("Speaker photo license") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1198,10 +1160,8 @@
                         {% with field=sform.cfp_ask_availabilities %}
                         <tr dragsort-id="availabilities">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.availabilities|default:_("Availability") }}</div>
-                                {% if field_help_texts.availabilities %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.availabilities|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Availability" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.availabilities|default:_("Availability") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1242,10 +1202,8 @@
                         {% with field=sform.cfp_ask_additional_speaker %}
                         <tr dragsort-id="additional_speaker">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.additional_speaker|default:_("Additional speakers") }}</div>
-                                {% if field_help_texts.additional_speaker %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.additional_speaker|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Additional speakers" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.additional_speaker|default:_("Additional Speaker") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
@@ -1286,10 +1244,8 @@
                         {% with field=sform.cfp_ask_social_links %}
                         <tr dragsort-id="social_links">
                             <th>
-                                <div class="font-weight-bold">{{ field_labels.social_links|default:_("Social Media") }}</div>
-                                {% if field_help_texts.social_links %}
-                                    <div class="small text-muted font-weight-normal mt-1">{{ field_help_texts.social_links|safe }}</div>
-                                {% endif %}
+                                <div class="font-weight-bold">{% translate "Social Media" %}</div>
+                                <div class="small text-muted font-weight-normal mt-1">{{ field_labels.social_links|default:_("Social Media") }}</div>
                             </th>
                             <td class="text-center">
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
